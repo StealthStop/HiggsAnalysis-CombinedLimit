@@ -1,29 +1,5 @@
 #!/bin/tcsh
 
-#source /cvmfs/cms.cern.ch/cmsset_default.csh
-#setenv SCRAM_ARCH slc6_amd64_gcc530
-#cmsrel CMSSW_8_1_0
-#cd CMSSW_8_1_0/src
-#eval `scramv1 runtime -csh`
-#git clone git@github.com:StealthStop/HiggsAnalysis-CombinedLimit.git HiggsAnalysis/CombinedLimit
-#cd $CMSSW_BASE/src/HiggsAnalysis/CombinedLimit
-#scram b clean
-#scram b -j8
-# 
-#mkdir Keras_V1.2.5_v2
-#xrdcp root://cmseos.fnal.gov//store/user/lpcsusyhad/StealthStop/FitInputs/Keras_V1.2.5_v2/njets_for_Aron.root     Keras_V1.2.5_v2/.
-#xrdcp root://cmseos.fnal.gov//store/user/lpcsusyhad/StealthStop/FitInputs/Keras_V1.2.5_v2/ttbar_systematics.root  Keras_V1.2.5_v2/.
-#
-#mkdir Keras_V3.0.1_v2
-#xrdcp root://cmseos.fnal.gov//store/user/lpcsusyhad/StealthStop/FitInputs/Keras_V3.0.1_v2/njets_for_Aron.root     Keras_V3.0.1_v2/.
-#xrdcp root://cmseos.fnal.gov//store/user/lpcsusyhad/StealthStop/FitInputs/Keras_V3.0.1_v2/ttbar_systematics.root  Keras_V3.0.1_v2/.
-#
-#eval `scramv1 runtime -csh`
-#root -l -q 'make_MVA_8bin_ws.C("2016","Keras_V1.2.5_v2","RPV","350")'
-#text2workspace.py Card2016.txt -o ws_2016_RPV_350.root -m 350 --keyword-value MODEL=RPV
-#combine -M AsymptoticLimits ws_2016_RPV_350.root -m 350 --keyword-value MODEL=RPV --verbose 2 -n 2016 > log_2016RPV350_Asymp.txt
-#########################################################################################################################################
-
 set inputRoot2016 = $1
 set inputRoot2017 = $2
 set signalType = $3
@@ -33,6 +9,7 @@ set dataType = $6
 set doAsym = $7
 set doFitDiag = $8
 set doMulti = $9
+set doImpact = $10
 
 set base_dir = `pwd`
 printf "\n\n base dir is $base_dir\n\n"
@@ -47,10 +24,13 @@ printf "\n\n Get the code needed .\n\n"
 cmsrel CMSSW_8_1_0
 cd CMSSW_8_1_0/src
 eval `scramv1 runtime -csh`
+curl https://raw.githubusercontent.com/cms-analysis/CombineHarvester/master/CombineTools/scripts/sparse-checkout-https.sh > sparse-checkout-https.sh
+chmod +x sparse-checkout-https.sh
+./sparse-checkout-https.sh
 git clone https://github.com/StealthStop/HiggsAnalysis-CombinedLimit.git HiggsAnalysis/CombinedLimit
-cd $CMSSW_BASE/src/HiggsAnalysis/CombinedLimit
 scram b clean
 scram b -j8
+cd $CMSSW_BASE/src/HiggsAnalysis/CombinedLimit
 
 printf "\n\n ls output\n"
 ls -l
@@ -91,6 +71,12 @@ if ($doFitDiag == 1) then
 endif
 if ($doMulti == 1) then
     combine -M MultiDimFit        ws_${year}_${signalType}_${mass}.root -m ${mass} --keyword-value MODEL=${signalType} --verbose 2 --cminDefaultMinimizerStrategy 1 --cminFallbackAlgo Minuit2,Migrad,0:0.1 --cminFallbackAlgo Minuit2,Migrad,1:1.0 --cminFallbackAlgo Minuit2,Migrad,0:1.0 --X-rtd MINIMIZER_MaxCalls=999999999 --X-rtd MINIMIZER_analytic --X-rtd FAST_VERTICAL_MORPH --rMax 5 --algo=grid --points=100                                -n SCAN_r_wSig                           > log_${year}${signalType}${mass}_multiDim.txt
+endif
+if ($doImpact == 1) then
+    ../../CombineHarvester/CombineTools/scripts/combineTool.py -M Impacts -d ws_${year}_${signalType}_${mass}.root -m ${mass} --doInitialFit --robustFit 1
+    ../../CombineHarvester/CombineTools/scripts/combineTool.py -M Impacts -d ws_${year}_${signalType}_${mass}.root -m ${mass} --doFits --parallel 4
+    ../../CombineHarvester/CombineTools/scripts/combineTool.py -M Impacts -d ws_${year}_${signalType}_${mass}.root -m ${mass} -o impacts.json
+    ../../CombineHarvester/CombineTools/scripts/plotImpacts.py -i impacts.json -o impacts
 endif
 
 printf "\n\n ls output\n"

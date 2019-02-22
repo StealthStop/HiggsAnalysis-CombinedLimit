@@ -21,7 +21,7 @@ def main():
     parser = optparse.OptionParser("usage: %prog [options]\n")
 
     parser.add_option ('--inPut_2016',  dest='inputRoot2016',  type='string', default = 'Keras_V1.2.5_v2', help="input root file directory: 2016")
-    parser.add_option ('--inPut_2017',  dest='inputRoot2017',  type='string', default = 'Keras_V3.0.1_v2', help="input root file directory: 2017")
+    parser.add_option ('--inPut_2017',  dest='inputRoot2017',  type='string', default = 'Keras_V3.0.1_v3', help="input root file directory: 2017")
     parser.add_option ('-d',            dest='signalType',     type='string', default = '',                help="List of signal model, comma separated")
     parser.add_option ('-t',            dest='dataType',       type='string', default = 'data',            help="Specify if running over data or sudo data")
     parser.add_option ('-m',            dest='masssets',       type='string', default = '',                help="List of mass models, comma separated")
@@ -30,6 +30,7 @@ def main():
     parser.add_option ('-A',            dest='doAsym',   action='store_true', default = False,             help="Specify AsymptoticLimits and Significance fit command to run")
     parser.add_option ('-F',            dest='doFitDiag',action='store_true', default = False,             help="Specify FitDiagnostics fit command to run")
     parser.add_option ('-M',            dest='doMulti',  action='store_true', default = False,             help="Specify MultiDimFit fit command to run")
+    parser.add_option ('-I',            dest='doImpact', action='store_true', default = False,             help="Specify Impact plots fit command to run")
     parser.add_option ('--output',      dest='outPath',        type='string', default = '.',               help="Name of directory where output of each condor job goes")
 
     parser.add_option ('--toy',         dest='toy',      action='store_true', default = False,             help="Submit toy jobs instead of the normal set of fits")
@@ -46,10 +47,12 @@ def main():
     doAsym = 1 if options.doAsym else 0
     doFitDiag = 1 if options.doFitDiag else 0
     doMulti = 1 if options.doMulti else 0
-    if not doAsym and not doFitDiag and not doMulti:
+    doImpact = 1 if options.doImpact else 0
+    if not doAsym and not doFitDiag and not doMulti and not doImpact:
         doAsym=1
         doFitDiag=1
         doMulti=1
+        doImpact=1
 
     executable = "run_fits.tcsh"
     if options.toy:
@@ -87,6 +90,7 @@ def main():
                     "MVA_2017_%s_%s_ws.root" % (st, mass),
                     "ws_%s_%s_%s.root"       % (options.year, st, mass),
                     "fitDiagnostics%s%s%s.root" % (options.year, st, mass), 
+                    "impacts.pdf",
                     "log_%s%s%s_Asymp.txt"      % (options.year, st, mass),
                     "log_%s%s%s_FitDiag.txt"    % (options.year, st, mass),
                     "log_%s%s%s_Sign_sig.txt"   % (options.year, st, mass),
@@ -103,7 +107,7 @@ def main():
                 transfer += "\"\n"
                     
                 fileParts.append(transfer)
-                fileParts.append("Arguments = %s %s %s %s %s %s %i %i %i\n" % (options.inputRoot2016, options.inputRoot2017, st, mass, options.year, options.dataType, doAsym, doFitDiag, doMulti))
+                fileParts.append("Arguments = %s %s %s %s %s %s %i %i %i %i\n" % (options.inputRoot2016, options.inputRoot2017, st, mass, options.year, options.dataType, doAsym, doFitDiag, doMulti, doImpact))
                 fileParts.append("Output = %s/log-files/MyFit_%s_%s.stdout\n"%(options.outPath, st, mass))
                 fileParts.append("Error = %s/log-files/MyFit_%s_%s.stderr\n"%(options.outPath, st, mass))
                 fileParts.append("Log = %s/log-files/MyFit_%s_%s.log\n"%(options.outPath, st, mass))
