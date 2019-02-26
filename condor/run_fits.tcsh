@@ -19,31 +19,58 @@ setenv SCRAM_ARCH slc6_amd64_gcc530
 
 printf "\n\n ls output\n"
 ls -l
-
-printf "\n\n Get the code needed .\n\n"
-cmsrel CMSSW_8_1_0
-cd CMSSW_8_1_0/src
-eval `scramv1 runtime -csh`
-curl https://raw.githubusercontent.com/cms-analysis/CombineHarvester/master/CombineTools/scripts/sparse-checkout-https.sh > sparse-checkout-https.sh
-chmod +x sparse-checkout-https.sh
-./sparse-checkout-https.sh
-git clone https://github.com/StealthStop/HiggsAnalysis-CombinedLimit.git HiggsAnalysis/CombinedLimit
-scram b clean
-scram b -j8
-cd $CMSSW_BASE/src/HiggsAnalysis/CombinedLimit
-
+printf "\n\n unpacking CMSSW tar file.\n\n"
+tar -xf CMSSW_8_1_0.tar.gz
 printf "\n\n ls output\n"
 ls -l
-
+printf "\n\n changing to CMSSW_8_1_0/ dir\n"
+cd CMSSW_8_1_0/
+mkdir -p src
+cd src
+scram b ProjectRename
+eval `scramv1 runtime -csh`
+git clone https://github.com/StealthStop/HiggsAnalysis-CombinedLimit.git HiggsAnalysis/CombinedLimit
+scram b -j8
+cd $CMSSW_BASE/src/HiggsAnalysis/CombinedLimit
+printf "\n\n ls output\n"
+ls -l
 printf "\n\n output of uname -s : "
 uname -s
 printf "\n\n"
-
+cp ${base_dir}/exestuff.tar.gz .
+tar xzvf exestuff.tar.gz
+#cd exestuff/
+cp exestuff/* .
 setenv LD_LIBRARY_PATH ${PWD}:${LD_LIBRARY_PATH}
 printf "\n\n LD_LIBRARY_PATH: ${LD_LIBRARY_PATH}\n\n"
-
 printf "\n\n ls output\n"
 ls -l
+
+#printf "\n\n Get the code needed .\n\n"
+#cmsrel CMSSW_8_1_0
+#cd CMSSW_8_1_0/src
+#eval `scramv1 runtime -csh`
+#curl https://raw.githubusercontent.com/cms-analysis/CombineHarvester/master/CombineTools/scripts/sparse-checkout-https.sh > sparse-checkout-https.sh
+#chmod +x sparse-checkout-https.sh
+#printenv
+#./sparse-checkout-https.sh
+#git clone https://github.com/StealthStop/HiggsAnalysis-CombinedLimit.git HiggsAnalysis/CombinedLimit
+#scram b clean
+#scram b -j8
+#cd $CMSSW_BASE/src/HiggsAnalysis/CombinedLimit
+#
+#printf "\n\n ls output\n"
+#ls -l
+#
+#printf "\n\n output of uname -s : "
+#uname -s
+#printf "\n\n"
+#
+#setenv LD_LIBRARY_PATH ${PWD}:${LD_LIBRARY_PATH}
+#printf "\n\n LD_LIBRARY_PATH: ${LD_LIBRARY_PATH}\n\n"
+#
+#printf "\n\n ls output\n"
+#ls -l
 
 printf "\n\n Attempting to run Fit executable.\n\n"
 mkdir ${inputRoot2016}
@@ -73,10 +100,10 @@ if ($doMulti == 1) then
     combine -M MultiDimFit        ws_${year}_${signalType}_${mass}.root -m ${mass} --keyword-value MODEL=${signalType} --verbose 2 --cminDefaultMinimizerStrategy 1 --cminFallbackAlgo Minuit2,Migrad,0:0.1 --cminFallbackAlgo Minuit2,Migrad,1:1.0 --cminFallbackAlgo Minuit2,Migrad,0:1.0 --X-rtd MINIMIZER_MaxCalls=999999999 --X-rtd MINIMIZER_analytic --X-rtd FAST_VERTICAL_MORPH --rMax 5 --algo=grid --points=100                                -n SCAN_r_wSig                           > log_${year}${signalType}${mass}_multiDim.txt
 endif
 if ($doImpact == 1) then
-    ../../CombineHarvester/CombineTools/scripts/combineTool.py -M Impacts -d ws_${year}_${signalType}_${mass}.root -m ${mass} --doInitialFit --robustFit 1
-    ../../CombineHarvester/CombineTools/scripts/combineTool.py -M Impacts -d ws_${year}_${signalType}_${mass}.root -m ${mass} --doFits --parallel 4
-    ../../CombineHarvester/CombineTools/scripts/combineTool.py -M Impacts -d ws_${year}_${signalType}_${mass}.root -m ${mass} -o impacts.json
-    ../../CombineHarvester/CombineTools/scripts/plotImpacts.py -i impacts.json -o impacts
+    combineTool.py -M Impacts -d ws_${year}_${signalType}_${mass}.root -m ${mass} --doInitialFit --robustFit 1
+    combineTool.py -M Impacts -d ws_${year}_${signalType}_${mass}.root -m ${mass} --doFits --parallel 4
+    combineTool.py -M Impacts -d ws_${year}_${signalType}_${mass}.root -m ${mass} -o impacts.json
+    plotImpacts.py -i impacts.json -o impacts
 endif
 
 printf "\n\n ls output\n"

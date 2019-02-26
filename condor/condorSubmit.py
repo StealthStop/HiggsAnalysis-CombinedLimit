@@ -13,6 +13,16 @@ def getOptionList(option, failMessage):
         print failMessage
         exit(0)
 
+def makeExeAndFriendsTarball(filestoTransfer, fname, path):
+    system("mkdir -p %s" % fname)
+    for fn in filestoTransfer:
+        system("cd %s; ln -s %s" % (fname, fn))
+        
+    tarallinputs = "tar czvf %s/%s.tar.gz %s --dereference"% (path, fname, fname)
+    print tarallinputs
+    system(tarallinputs)
+    system("rm -r %s" % fname)
+
 def main():
     repo = "HiggsAnalysis/CombinedLimit"
     seed = int(time.time())
@@ -58,9 +68,18 @@ def main():
     if options.toy:
         executable = "run_toys.tcsh"
 
+    filestoTransfer = [
+        environ["CMSSW_BASE"] + "/src/HiggsAnalysis/CombinedLimit/Card2016.txt",
+        environ["CMSSW_BASE"] + "/src/HiggsAnalysis/CombinedLimit/Card2017.txt",
+        environ["CMSSW_BASE"] + "/src/HiggsAnalysis/CombinedLimit/make_MVA_8bin_ws.C",
+        #environ["CMSSW_BASE"] + "/src/CombineHarvester/CombineTools/scripts/combineTool.py",
+        #environ["CMSSW_BASE"] + "/src/CombineHarvester/CombineTools/scripts/plotImpacts.py",
+    ]
+    
     fileParts = []
     fileParts.append("Universe   = vanilla\n")
     fileParts.append("Executable = %s\n" % executable)
+    fileParts.append("Transfer_Input_Files = %s/CMSSW_8_1_0.tar.gz, %s/exestuff.tar.gz\n" % (options.outPath,options.outPath))
     fileParts.append("Should_Transfer_Files = YES\n")
     fileParts.append("WhenToTransferOutput = ON_EXIT\n")
     fileParts.append("request_disk = 1000000\n")
@@ -107,7 +126,8 @@ def main():
                 transfer += "\"\n"
                     
                 fileParts.append(transfer)
-                fileParts.append("Arguments = %s %s %s %s %s %s %i %i %i %i\n" % (options.inputRoot2016, options.inputRoot2017, st, mass, options.year, options.dataType, doAsym, doFitDiag, doMulti, doImpact))
+                fileParts.append("Arguments = %s %s %s %s %s %s %i %i %i %i\n" % (options.inputRoot2016, options.inputRoot2017, st, mass, options.year, 
+                                                                                  options.dataType, doAsym, doFitDiag, doMulti, doImpact))
                 fileParts.append("Output = %s/log-files/MyFit_%s_%s.stdout\n"%(options.outPath, st, mass))
                 fileParts.append("Error = %s/log-files/MyFit_%s_%s.stderr\n"%(options.outPath, st, mass))
                 fileParts.append("Log = %s/log-files/MyFit_%s_%s.log\n"%(options.outPath, st, mass))
@@ -149,6 +169,9 @@ def main():
     fout.write(''.join(fileParts))
     fout.close()
     
+    makeExeAndFriendsTarball(filestoTransfer, "exestuff", options.outPath)
+    system("tar --exclude-caches-all --exclude-vcs -zcf %s/${CMSSW_VERSION}.tar.gz -C ${CMSSW_BASE}/.. ${CMSSW_VERSION} --exclude=src --exclude=tmp" % options.outPath)
+
     if not options.noSubmit: 
         system('mkdir -p %s/log-files' % options.outPath)
         system("echo 'condor_submit condor_submit.txt'")
