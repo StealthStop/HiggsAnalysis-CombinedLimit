@@ -40,6 +40,9 @@ def main():
     parser.add_option ('--rStep',       dest='rStep',          type='float',  default = 0.05,              help="Specify step size")
     parser.add_option ('--jPerR',       dest='jPerR',          type='int',    default = 5,                 help="Specify jobs per r setting")
 
+    parser.add_option ('--toyS',        dest='toyS',     action='store_true', default = False,             help="Submit toy jobs for global sig. instead of the normal set of fits")
+    parser.add_option ('--nJobs',       dest='nJobs',          type='int',    default = 1,                 help="Specify number of time you want to run global sig. toys")
+
     options, args = parser.parse_args()
     signalType = getOptionList(options.signalType, "No dataset specified")
     masssets = getOptionList(options.masssets, "No mass model specified")
@@ -55,6 +58,8 @@ def main():
     executable = "run_fits.tcsh"
     if options.toy:
         executable = "run_toys.tcsh"
+    elif options.toyS:
+        executable = "run_sig_toys.tcsh"
 
     fileParts = []
     fileParts.append("Universe   = vanilla\n")
@@ -75,8 +80,67 @@ def main():
             outDir = st+"_"+mass+"_"+options.year
             if not os.path.isdir("%s/output-files/%s" % (options.outPath, outDir)):
                 os.makedirs("%s/output-files/%s" % (options.outPath, outDir))
-    
-            if not options.toy:
+
+            if options.toy:
+                nSteps = int(round((options.rMax - options.rMin)/options.rStep))
+                for x in range(0, nSteps+1):           
+                    r = options.rMin + float(x)*options.rStep 
+                    print "    r = ", r
+                
+                    for y in range(options.jPerR):                        
+                        print "        seed = ", seed
+
+                        outputFiles = [
+                            "MVA_2016_%s_%s_ws.root" % (st, mass),
+                            "MVA_2017_%s_%s_ws.root" % (st, mass),
+                            "ws_%s_%s_%s.root"       % (options.year, st, mass),
+                            "higgsCombine%s.HybridNew.mH%s.MODEL%s.%s.root" % (options.year, mass, st, str(seed)),
+                            "log_%s%s%s_%s_%s_HybridNew.txt" % (options.year, st, mass, str(r), str(seed)),
+                        ]
+
+                        transfer = "transfer_output_remaps = \""
+                        for f in outputFiles:
+                            transfer += "%s = %s/output-files/%s/%s" % (f, options.outPath, outDir, f)
+                            if f != outputFiles[-1]:
+                                transfer += "; "
+                        transfer += "\"\n"
+
+                        fileParts.append(transfer)
+                        fileParts.append("Arguments = %s %s %s %s %s %s %s %s %s\n" % (options.inputRoot2016, options.inputRoot2017, st, mass, options.year, 
+                                                                                       options.dataType, str(r), str(seed), str(options.numToys)))
+                        fileParts.append("Output = %s/log-files/MyFit_%s_%s_%s_%s.stdout\n"%(options.outPath, st, mass, str(r), str(seed)))
+                        fileParts.append("Error = %s/log-files/MyFit_%s_%s_%s_%s.stderr\n"%(options.outPath, st, mass, str(r), str(seed)))
+                        fileParts.append("Log = %s/log-files/MyFit_%s_%s_%s_%s.log\n"%(options.outPath, st, mass, str(r), str(seed)))
+                        fileParts.append("Queue\n\n")
+                        seed+=1    
+            elif options.toyS:
+                nSteps = int(round((options.rMax - 0.0)/options.rStep))
+                print "    nJobs =", options.nJobs, "nSteps =", nSteps, "nToys =", options.numToys, "nFits =", options.nJobs*nSteps*options.numToys 
+                for x in range(1, options.nJobs+1):           
+                    print "        x =", x, "seed =", seed
+                    outputFiles = [
+                        "MVA_2016_%s_%s_ws.root" % (st, mass),
+                        "MVA_2017_%s_%s_ws.root" % (st, mass),
+                        "ws_%s_%s_%s.root"       % (options.year, st, mass),
+                        "higgsCombine_sig.MultiDimFit.mH%s.%s.root" % (mass, str(seed))
+                    ]
+
+                    transfer = "transfer_output_remaps = \""
+                    for f in outputFiles:
+                        transfer += "%s = %s/output-files/%s/%s" % (f, options.outPath, outDir, f)
+                        if f != outputFiles[-1]:
+                            transfer += "; "
+                    transfer += "\"\n"
+
+                    fileParts.append(transfer)
+                    fileParts.append("Arguments = %s %s %s %s %s %s %s %s %s %s\n" % (options.inputRoot2016, options.inputRoot2017, st, mass, options.year, 
+                                                                                   options.dataType, str(options.rMax), str(nSteps), str(seed), str(options.numToys)))
+                    fileParts.append("Output = %s/log-files/MyFit_%s_%s_%s.stdout\n"%(options.outPath, st, mass, str(seed)))
+                    fileParts.append("Error = %s/log-files/MyFit_%s_%s_%s.stderr\n"%(options.outPath, st, mass, str(seed)))
+                    fileParts.append("Log = %s/log-files/MyFit_%s_%s_%s.log\n"%(options.outPath, st, mass, str(seed)))
+                    fileParts.append("Queue\n\n")
+                    seed+=1    
+            else:
                 outputFiles = [
                     "higgsCombine%s.AsymptoticLimits.mH%s.MODEL%s.root" % (options.year, mass, st),
                     "higgsCombine%s%s%s.FitDiagnostics.mH%s.MODEL%s.root" % (options.year, st, mass, mass, st),
@@ -109,38 +173,6 @@ def main():
                 fileParts.append("Error = %s/log-files/MyFit_%s_%s.stderr\n"%(options.outPath, st, mass))
                 fileParts.append("Log = %s/log-files/MyFit_%s_%s.log\n"%(options.outPath, st, mass))
                 fileParts.append("Queue\n\n")
-            else:
-                nSteps = int(round((options.rMax - options.rMin)/options.rStep))
-                for x in range(0, nSteps+1):           
-                    r = options.rMin + float(x)*options.rStep 
-                    print "    r = ", r
-                
-                    for y in range(options.jPerR):                        
-                        print "        seed = ", seed
-
-                        outputFiles = [
-                            "MVA_2016_%s_%s_ws.root" % (st, mass),
-                            "MVA_2017_%s_%s_ws.root" % (st, mass),
-                            "ws_%s_%s_%s.root"       % (options.year, st, mass),
-                            "higgsCombine%s.HybridNew.mH%s.MODEL%s.%s.root" % (options.year, mass, st, str(seed)),
-                            "log_%s%s%s_%s_%s_HybridNew.txt" % (options.year, st, mass, str(r), str(seed)),
-                        ]
-
-                        transfer = "transfer_output_remaps = \""
-                        for f in outputFiles:
-                            transfer += "%s = %s/output-files/%s/%s" % (f, options.outPath, outDir, f)
-                            if f != outputFiles[-1]:
-                                transfer += "; "
-                        transfer += "\"\n"
-
-                        fileParts.append(transfer)
-                        fileParts.append("Arguments = %s %s %s %s %s %s %s %s %s\n" % (options.inputRoot2016, options.inputRoot2017, st, mass, options.year, 
-                                                                                       options.dataType, str(r), str(seed), str(options.numToys)))
-                        fileParts.append("Output = %s/log-files/MyFit_%s_%s_%s_%s.stdout\n"%(options.outPath, st, mass, str(r), str(seed)))
-                        fileParts.append("Error = %s/log-files/MyFit_%s_%s_%s_%s.stderr\n"%(options.outPath, st, mass, str(r), str(seed)))
-                        fileParts.append("Log = %s/log-files/MyFit_%s_%s_%s_%s.log\n"%(options.outPath, st, mass, str(r), str(seed)))
-                        fileParts.append("Queue\n\n")
-                        seed+=1
     
     fout = open("condor_submit.txt", "w")
     fout.write(''.join(fileParts))

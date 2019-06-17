@@ -40,12 +40,15 @@ if __name__ == '__main__':
     parser.add_option ('-s', dest='sysFile',  type='string', default = 'ttbar_systematics.root', help="Specify if running over data or pseudo data")
     parser.add_option ('-f', dest='fitFile',  type='string', default = 'fitDiagnosticsComboRPV350.root', help="Specify if running over data or pseudo data")
     parser.add_option ('-y', dest='year',     type='string', default = '2016', help="year")
+    parser.add_option ('-F', dest='fitType',  type='string', default = 'b',    help="year")
     options, args = parser.parse_args()
 
     inFile = ROOT.TFile.Open(options.sysFile)
     qcdSysMap = getMap(inFile, ["D1","D2","D3","D4"])
     fitFileCombo = ROOT.TFile.Open(options.fitFile)
-    treeIter = iter(fitFileCombo.tree_fit_b)
+    treeIter = "default"
+    if options.fitType == "b": treeIter = iter(fitFileCombo.tree_fit_b)
+    elif options.fitType == "sb": treeIter = iter(fitFileCombo.tree_fit_sb)    
     entry = treeIter.next()
 
     c = ROOT.TCanvas( "c", "c", 0, 0, 800, 800)
@@ -74,6 +77,7 @@ if __name__ == '__main__':
         qcdSysHist.SetMaximum(1.3)
         qcdSysHist.SetMinimum(0.7)
         qcdSysHist.SetLineColor(ROOT.kBlack)
+        qcdSysHist.SetTitle("Pre and Post Fit qcdCR NP: "+bin+" "+options.dataType+" "+options.year+" "+options.fitType)
         qcdSysHist.Draw("E")
         leg.AddEntry(qcdSysHist, "Pre-Fit", "l")
 
@@ -90,4 +94,4 @@ if __name__ == '__main__':
 
         leg.Draw()
         i+=1
-    c.SaveAs("qcdCR_"+options.dataType+"_"+options.year+".pdf")
+    c.SaveAs("qcdCR_rPrimePlotCompare_"+options.dataType+"_"+options.year+"_"+options.fitType+".pdf")
