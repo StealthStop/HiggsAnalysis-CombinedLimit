@@ -34,17 +34,6 @@ public:
     const TH1D* h_r;
     const TH1D* h_rprime;
     RooArgList rprime_names;
-    std::map<int, std::vector<double>> coefMap;
-    RooArgList coefNames;
-
-    NuisanceParam(const RooAbsArg& r_name, std::map<int, std::vector<double>> coefMap, RooArgList coefNames) 
-        : r_name(r_name)
-        , h_r(nullptr)
-        , h_rprime(nullptr)
-        , coefMap(coefMap)
-        , coefNames(coefNames)
-    {        
-    }
     
     NuisanceParam(const RooAbsArg& r_name, const TH1D* h_r, const TH1D* h_rprime, RooArgList rprime_names) 
         : r_name(r_name)
@@ -80,16 +69,6 @@ void addNPs(stringstream& f, RooArgList& list, const double r, const RooAbsArg& 
     f << "*TMath::Power(" << r << ",@"+paramNum+")*TMath::Power(" << rprime << ",@"+paramNumG+"*@"+paramNum+")";
     list.add(NP);
     list.add(NPg);
-}
-
-void addNPs(stringstream& f, RooArgList& list, const RooAbsArg& NP, const std::vector<double>& coefVec, const RooArgList& coefNames)
-{
-    int paramNum  = list.getSize();
-    f << "*TMath::Power("<<coefVec[0]<<" + "<<coefVec[1]<<"*@"<<paramNum+1<<" + "<<coefVec[2]<<"*@"<<paramNum+2<<" + "<<coefVec[3]<<"*@"<<paramNum+3<<",@"<<paramNum<<")";
-    list.add(NP);
-    list.add(coefNames[0]);
-    list.add(coefNames[1]);
-    list.add(coefNames[2]);
 }
 
 template<typename T> void WriteHisto2WS(TFile* f, const std::string& histName, const std::string& wsName, const std::vector<std::string>& MVABins, const std::string& type = "")
@@ -165,18 +144,13 @@ void construct_formula(std::string procName, RooArgList& binlist, const RooArgLi
     form << ")";
 
     // Add nuisance parameters
-    std::cout<<"Adding NP"<<std::endl;
     for(unsigned int j = 0; j < NPs.size(); j++)
     {
-        double r = (NPs[j].h_r) ? NPs[j].h_r->GetBinContent(i+1) : 0.0;
+        double r = NPs[j].h_r->GetBinContent(i+1);
         if(NPs[j].h_rprime)
         {
             double rprime = NPs[j].h_rprime->GetBinContent(i+1);
             addNPs(form, formArgList, r, NPs[j].r_name, rprime, NPs[j].rprime_names[i]);
-        }
-        else if(!NPs[j].coefMap.empty())
-        {
-            addNPs(form, formArgList, NPs[j].r_name, NPs[j].coefMap.find(i+1)->second, NPs[j].coefNames);
         }
         else
         {
@@ -241,58 +215,71 @@ void make_MVA_8bin_ws(const std::string year = "2016", const std::string infile_
   TFile* file = TFile::Open((infile_path+"/njets_for_Aron.root").c_str());
 
   TH1D* data_th1_D1;
-  if     (dataType == "data")        data_th1_D1 = (TH1D*)file->Get("D1_data_h_njets_pt30_1l");  // Actual data -- be careful
-  else if(dataType == "pseudodata" ) data_th1_D1 = (TH1D*)file->Get("D1_pseudodata_h_njets_pt30_1l"); // without signal
-  else if(dataType == "pseudodataS") data_th1_D1 = (TH1D*)file->Get(("D1_pseudodataS_"+model+"_"+mass+"_h_njets_pt30_1l").c_str());  // with signal
-  else if(dataType == "pseudodataA" ) data_th1_D1 = (TH1D*)file->Get("D1_pseudodataFunc28_24_236_h_njets_pt30_1l"); //
-  else if(dataType == "pseudodataB" ) data_th1_D1 = (TH1D*)file->Get("D1_pseudodataFunc28_24_18_h_njets_pt30_1l"); //
-  else if(dataType == "pseudodataC" ) data_th1_D1 = (TH1D*)file->Get("D1_pseudodataFunc28_24_-20_h_njets_pt30_1l"); //
+  if     (dataType == "data")        data_th1_D1 = (TH1D*)file->Get(("D1_data_h_njets_pt30_1l"+syst).c_str());  // Actual data -- be careful
+  else if(dataType == "pseudodata" ) data_th1_D1 = (TH1D*)file->Get(("D1_pseudodata_h_njets_pt30_1l"+syst).c_str()); // without signal
+  else if(dataType == "pseudodataS") data_th1_D1 = (TH1D*)file->Get(("D1_pseudodataS_"+model+"_"+mass+"_h_njets_pt30_1l"+syst).c_str());  // with signal
+  else if(dataType == "pseudodataA" ) data_th1_D1 = (TH1D*)file->Get(("D1_pseudodataFunc28_24_236_h_njets_pt30_1l"+syst).c_str()); //
+  else if(dataType == "pseudodataB" ) data_th1_D1 = (TH1D*)file->Get(("D1_pseudodataFunc28_24_18_h_njets_pt30_1l"+syst).c_str()); //
+  else if(dataType == "pseudodataC" ) data_th1_D1 = (TH1D*)file->Get(("D1_pseudodataFunc28_24_-20_h_njets_pt30_1l"+syst).c_str()); //
   else                               data_th1_D1 = (TH1D*)file->Get(("D1_"+dataType+"_h_njets_pt30_1l"+syst).c_str());
-  TH1D* otherMC_th1_D1 = (TH1D*)file->Get("D1_OTHER_h_njets_pt30_1l");
-  TH1D* qcdMC_th1_D1 = (TH1D*)file->Get("D1_QCD_h_njets_pt30_1l");
-  TH1D* ttxMC_th1_D1 = (TH1D*)file->Get("D1_TTX_h_njets_pt30_1l");
-  TH1D* sigMC_th1_D1 = (TH1D*)file->Get(("D1_"+model+"_"+mass+"_h_njets_pt30_1l").c_str());
+  TH1D* otherMC_th1_D1 = (TH1D*)file->Get(("D1_OTHER_h_njets_pt30_1l"+syst).c_str());
+  TH1D* qcdMC_th1_D1 = (TH1D*)file->Get(("D1_QCD_h_njets_pt30_1l"+syst).c_str());
+  TH1D* ttxMC_th1_D1 = (TH1D*)file->Get(("D1_TTX_h_njets_pt30_1l"+syst).c_str());
+  TH1D* sigMC_th1_D1 = (TH1D*)file->Get(("D1_"+model+"_"+mass+"_h_njets_pt30_1l"+syst).c_str());
 
   TH1D* data_th1_D2;
-  if     (dataType == "data")        data_th1_D2 = (TH1D*)file->Get("D2_data_h_njets_pt30_1l");  // Actual data -- be careful
-  else if(dataType == "pseudodata" ) data_th1_D2 = (TH1D*)file->Get("D2_pseudodata_h_njets_pt30_1l"); // without signal
-  else if(dataType == "pseudodataS") data_th1_D2 = (TH1D*)file->Get(("D2_pseudodataS_"+model+"_"+mass+"_h_njets_pt30_1l").c_str());  // with signal
-  else if(dataType == "pseudodataA" ) data_th1_D2 = (TH1D*)file->Get("D2_pseudodataFunc28_24_236_h_njets_pt30_1l"); //
-  else if(dataType == "pseudodataB" ) data_th1_D2 = (TH1D*)file->Get("D2_pseudodataFunc28_24_18_h_njets_pt30_1l"); //
-  else if(dataType == "pseudodataC" ) data_th1_D2 = (TH1D*)file->Get("D2_pseudodataFunc28_24_-20_h_njets_pt30_1l"); //
+  if     (dataType == "data")        data_th1_D2 = (TH1D*)file->Get(("D2_data_h_njets_pt30_1l"+syst).c_str());  // Actual data -- be careful
+  else if(dataType == "pseudodata" ) data_th1_D2 = (TH1D*)file->Get(("D2_pseudodata_h_njets_pt30_1l"+syst).c_str()); // without signal
+  else if(dataType == "pseudodataS") data_th1_D2 = (TH1D*)file->Get(("D2_pseudodataS_"+model+"_"+mass+"_h_njets_pt30_1l"+syst).c_str());  // with signal
+  else if(dataType == "pseudodataA" ) data_th1_D2 = (TH1D*)file->Get(("D2_pseudodataFunc28_24_236_h_njets_pt30_1l"+syst).c_str()); //
+  else if(dataType == "pseudodataB" ) data_th1_D2 = (TH1D*)file->Get(("D2_pseudodataFunc28_24_18_h_njets_pt30_1l"+syst).c_str()); //
+  else if(dataType == "pseudodataC" ) data_th1_D2 = (TH1D*)file->Get(("D2_pseudodataFunc28_24_-20_h_njets_pt30_1l"+syst).c_str()); //
   else                               data_th1_D2 = (TH1D*)file->Get(("D2_"+dataType+"_h_njets_pt30_1l"+syst).c_str());
-  TH1D* otherMC_th1_D2 = (TH1D*)file->Get("D2_OTHER_h_njets_pt30_1l");
-  TH1D* qcdMC_th1_D2 = (TH1D*)file->Get("D2_QCD_h_njets_pt30_1l");
-  TH1D* ttxMC_th1_D2 = (TH1D*)file->Get("D2_TTX_h_njets_pt30_1l");
-  TH1D* sigMC_th1_D2 = (TH1D*)file->Get(("D2_"+model+"_"+mass+"_h_njets_pt30_1l").c_str());
+  TH1D* otherMC_th1_D2 = (TH1D*)file->Get(("D2_OTHER_h_njets_pt30_1l"+syst).c_str());
+  TH1D* qcdMC_th1_D2 = (TH1D*)file->Get(("D2_QCD_h_njets_pt30_1l"+syst).c_str());
+  TH1D* ttxMC_th1_D2 = (TH1D*)file->Get(("D2_TTX_h_njets_pt30_1l"+syst).c_str());
+  TH1D* sigMC_th1_D2 = (TH1D*)file->Get(("D2_"+model+"_"+mass+"_h_njets_pt30_1l"+syst).c_str());
 
   TH1D* data_th1_D3;
-  if     (dataType == "data")        data_th1_D3 = (TH1D*)file->Get("D3_data_h_njets_pt30_1l");  // Actual data -- be careful
-  else if(dataType == "pseudodata" ) data_th1_D3 = (TH1D*)file->Get("D3_pseudodata_h_njets_pt30_1l"); // without signal
-  else if(dataType == "pseudodataS") data_th1_D3 = (TH1D*)file->Get(("D3_pseudodataS_"+model+"_"+mass+"_h_njets_pt30_1l").c_str());  // with signal
-  else if(dataType == "pseudodataA" ) data_th1_D3 = (TH1D*)file->Get("D3_pseudodataFunc28_24_236_h_njets_pt30_1l"); //
-  else if(dataType == "pseudodataB" ) data_th1_D3 = (TH1D*)file->Get("D3_pseudodataFunc28_24_18_h_njets_pt30_1l"); //
-  else if(dataType == "pseudodataC" ) data_th1_D3 = (TH1D*)file->Get("D3_pseudodataFunc28_24_-20_h_njets_pt30_1l"); //
+  if     (dataType == "data")        data_th1_D3 = (TH1D*)file->Get(("D3_data_h_njets_pt30_1l"+syst).c_str());  // Actual data -- be careful
+  else if(dataType == "pseudodata" ) data_th1_D3 = (TH1D*)file->Get(("D3_pseudodata_h_njets_pt30_1l"+syst).c_str()); // without signal
+  else if(dataType == "pseudodataS") data_th1_D3 = (TH1D*)file->Get(("D3_pseudodataS_"+model+"_"+mass+"_h_njets_pt30_1l"+syst).c_str());  // with signal
+  else if(dataType == "pseudodataA" ) data_th1_D3 = (TH1D*)file->Get(("D3_pseudodataFunc28_24_236_h_njets_pt30_1l"+syst).c_str()); //
+  else if(dataType == "pseudodataB" ) data_th1_D3 = (TH1D*)file->Get(("D3_pseudodataFunc28_24_18_h_njets_pt30_1l"+syst).c_str()); //
+  else if(dataType == "pseudodataC" ) data_th1_D3 = (TH1D*)file->Get(("D3_pseudodataFunc28_24_-20_h_njets_pt30_1l"+syst).c_str()); //
   else                               data_th1_D3 = (TH1D*)file->Get(("D3_"+dataType+"_h_njets_pt30_1l"+syst).c_str());
-  TH1D* otherMC_th1_D3 = (TH1D*)file->Get("D3_OTHER_h_njets_pt30_1l");
-  TH1D* qcdMC_th1_D3 = (TH1D*)file->Get("D3_QCD_h_njets_pt30_1l");
-  TH1D* ttxMC_th1_D3 = (TH1D*)file->Get("D3_TTX_h_njets_pt30_1l");
-  TH1D* sigMC_th1_D3 = (TH1D*)file->Get(("D3_"+model+"_"+mass+"_h_njets_pt30_1l").c_str());
+  TH1D* otherMC_th1_D3 = (TH1D*)file->Get(("D3_OTHER_h_njets_pt30_1l"+syst).c_str());
+  TH1D* qcdMC_th1_D3 = (TH1D*)file->Get(("D3_QCD_h_njets_pt30_1l"+syst).c_str());
+  TH1D* ttxMC_th1_D3 = (TH1D*)file->Get(("D3_TTX_h_njets_pt30_1l"+syst).c_str());
+  TH1D* sigMC_th1_D3 = (TH1D*)file->Get(("D3_"+model+"_"+mass+"_h_njets_pt30_1l"+syst).c_str());
 
   TH1D* data_th1_D4;
-  if     (dataType == "data")        data_th1_D4 = (TH1D*)file->Get("D4_data_h_njets_pt30_1l");  // Actual data -- be careful
-  else if(dataType == "pseudodata" ) data_th1_D4 = (TH1D*)file->Get("D4_pseudodata_h_njets_pt30_1l"); // without signal
-  else if(dataType == "pseudodataS") data_th1_D4 = (TH1D*)file->Get(("D4_pseudodataS_"+model+"_"+mass+"_h_njets_pt30_1l").c_str());  // with signal
-  else if(dataType == "pseudodataA" ) data_th1_D4 = (TH1D*)file->Get("D4_pseudodataFunc28_24_236_h_njets_pt30_1l"); //
-  else if(dataType == "pseudodataB" ) data_th1_D4 = (TH1D*)file->Get("D4_pseudodataFunc28_24_18_h_njets_pt30_1l"); //
-  else if(dataType == "pseudodataC" ) data_th1_D4 = (TH1D*)file->Get("D4_pseudodataFunc28_24_-20_h_njets_pt30_1l"); //
+  if     (dataType == "data")        data_th1_D4 = (TH1D*)file->Get(("D4_data_h_njets_pt30_1l"+syst).c_str());  // Actual data -- be careful
+  else if(dataType == "pseudodata" ) data_th1_D4 = (TH1D*)file->Get(("D4_pseudodata_h_njets_pt30_1l"+syst).c_str()); // without signal
+  else if(dataType == "pseudodataS") data_th1_D4 = (TH1D*)file->Get(("D4_pseudodataS_"+model+"_"+mass+"_h_njets_pt30_1l"+syst).c_str());  // with signal
+  else if(dataType == "pseudodataA" ) data_th1_D4 = (TH1D*)file->Get(("D4_pseudodataFunc28_24_236_h_njets_pt30_1l"+syst).c_str()); //
+  else if(dataType == "pseudodataB" ) data_th1_D4 = (TH1D*)file->Get(("D4_pseudodataFunc28_24_18_h_njets_pt30_1l"+syst).c_str()); //
+  else if(dataType == "pseudodataC" ) data_th1_D4 = (TH1D*)file->Get(("D4_pseudodataFunc28_24_-20_h_njets_pt30_1l"+syst).c_str()); //
   else                               data_th1_D4 = (TH1D*)file->Get(("D4_"+dataType+"_h_njets_pt30_1l"+syst).c_str());
-  TH1D* otherMC_th1_D4 = (TH1D*)file->Get("D4_OTHER_h_njets_pt30_1l");
-  TH1D* qcdMC_th1_D4 = (TH1D*)file->Get("D4_QCD_h_njets_pt30_1l");
-  TH1D* ttxMC_th1_D4 = (TH1D*)file->Get("D4_TTX_h_njets_pt30_1l");
-  TH1D* sigMC_th1_D4 = (TH1D*)file->Get(("D4_"+model+"_"+mass+"_h_njets_pt30_1l").c_str());
+  TH1D* otherMC_th1_D4 = (TH1D*)file->Get(("D4_OTHER_h_njets_pt30_1l"+syst).c_str());
+  TH1D* qcdMC_th1_D4 = (TH1D*)file->Get(("D4_QCD_h_njets_pt30_1l"+syst).c_str());
+  TH1D* ttxMC_th1_D4 = (TH1D*)file->Get(("D4_TTX_h_njets_pt30_1l"+syst).c_str());
+  TH1D* sigMC_th1_D4 = (TH1D*)file->Get(("D4_"+model+"_"+mass+"_h_njets_pt30_1l"+syst).c_str());
 
   // tt bkg param setup
+  //RooRealVar a0_tt("a0_tt","a0 of tt bkg shape",0.28,0.0,1.0);
+  //RooRealVar a1_tt("a1_tt","a1 of tt bkg shape",0.24,0.0,1.0);
+  ////RooRealVar a2_tt("a2_tt","a2 of tt bkg shape",0.10,-0.5,0.5);
+  //RooRealVar a2_tt("a2_tt","a2 of tt bkg shape",0.10,-0.5,0.23);
+
+  //RooRealVar a0_tt("a0_tt","a0 of tt bkg shape",0.28,0.26,0.30);
+  //RooRealVar a1_tt("a1_tt","a1 of tt bkg shape",0.24,0.23,0.27);
+  //RooRealVar a2_tt("a2_tt","a2 of tt bkg shape",0.10,-0.05,0.23);
+
+  //RooRealVar a0_tt("a0_tt","a0 of tt bkg shape",0.28,0.26,0.50);
+  //RooRealVar a1_tt("a1_tt","a1 of tt bkg shape",0.25,0.24,0.50);
+  //RooRealVar a2_tt("a2_tt","a2 of tt bkg shape",0.10,-0.05,0.24);
+
   RooRealVar a0_tt(("a0_tt_"+year).c_str(),("a0 of tt bkg shape for "+year).c_str(),0.28,0.1,0.4);
   RooRealVar a1_tt(("a1_tt_"+year).c_str(),("a1 of tt bkg shape for "+year).c_str(),0.24,0.1,0.4);
   //RooRealVar a2_tt(("a2_tt_"+year).c_str(),("a2 of tt bkg shape for "+year).c_str(),0.20,0.0,0.4);
@@ -356,18 +343,30 @@ void make_MVA_8bin_ws(const std::string year = "2016", const std::string infile_
   wspace->factory(("np_tt_pu_"+year+"[0.0]").c_str());// uncorrelated
   wspace->factory(("np_tt_JECDown_"+year+"[0.0]").c_str()); // uncorrelated
   wspace->factory(("np_tt_JERDown_"+year+"[0.0]").c_str()); // uncorrelated
-  wspace->factory(("np_tt_qcdCRD1Coef1_"+year+"[0.0]").c_str()); // uncorrelated
-  wspace->factory(("np_tt_qcdCRD1Coef2_"+year+"[0.0]").c_str()); // uncorrelated
-  wspace->factory(("np_tt_qcdCRD1Coef3_"+year+"[0.0]").c_str()); // uncorrelated
-  wspace->factory(("np_tt_qcdCRD2Coef1_"+year+"[0.0]").c_str()); // uncorrelated
-  wspace->factory(("np_tt_qcdCRD2Coef2_"+year+"[0.0]").c_str()); // uncorrelated
-  wspace->factory(("np_tt_qcdCRD2Coef3_"+year+"[0.0]").c_str()); // uncorrelated
-  wspace->factory(("np_tt_qcdCRD3Coef1_"+year+"[0.0]").c_str()); // uncorrelated
-  wspace->factory(("np_tt_qcdCRD3Coef2_"+year+"[0.0]").c_str()); // uncorrelated
-  wspace->factory(("np_tt_qcdCRD3Coef3_"+year+"[0.0]").c_str()); // uncorrelated
-  wspace->factory(("np_tt_qcdCRD4Coef1_"+year+"[0.0]").c_str()); // uncorrelated
-  wspace->factory(("np_tt_qcdCRD4Coef2_"+year+"[0.0]").c_str()); // uncorrelated
-  wspace->factory(("np_tt_qcdCRD4Coef3_"+year+"[0.0]").c_str()); // uncorrelated
+  wspace->factory(("np_tt_qcdCRErrD1Bin1_"+year+"[0.0]").c_str()); // uncorrelated
+  wspace->factory(("np_tt_qcdCRErrD1Bin2_"+year+"[0.0]").c_str()); // uncorrelated
+  wspace->factory(("np_tt_qcdCRErrD1Bin3_"+year+"[0.0]").c_str()); // uncorrelated
+  wspace->factory(("np_tt_qcdCRErrD1Bin4_"+year+"[0.0]").c_str()); // uncorrelated
+  wspace->factory(("np_tt_qcdCRErrD1Bin5_"+year+"[0.0]").c_str()); // uncorrelated
+  wspace->factory(("np_tt_qcdCRErrD1Bin6_"+year+"[0.0]").c_str()); // uncorrelated
+  wspace->factory(("np_tt_qcdCRErrD2Bin1_"+year+"[0.0]").c_str()); // uncorrelated
+  wspace->factory(("np_tt_qcdCRErrD2Bin2_"+year+"[0.0]").c_str()); // uncorrelated
+  wspace->factory(("np_tt_qcdCRErrD2Bin3_"+year+"[0.0]").c_str()); // uncorrelated
+  wspace->factory(("np_tt_qcdCRErrD2Bin4_"+year+"[0.0]").c_str()); // uncorrelated
+  wspace->factory(("np_tt_qcdCRErrD2Bin5_"+year+"[0.0]").c_str()); // uncorrelated
+  wspace->factory(("np_tt_qcdCRErrD2Bin6_"+year+"[0.0]").c_str()); // uncorrelated
+  wspace->factory(("np_tt_qcdCRErrD3Bin1_"+year+"[0.0]").c_str()); // uncorrelated
+  wspace->factory(("np_tt_qcdCRErrD3Bin2_"+year+"[0.0]").c_str()); // uncorrelated
+  wspace->factory(("np_tt_qcdCRErrD3Bin3_"+year+"[0.0]").c_str()); // uncorrelated
+  wspace->factory(("np_tt_qcdCRErrD3Bin4_"+year+"[0.0]").c_str()); // uncorrelated
+  wspace->factory(("np_tt_qcdCRErrD3Bin5_"+year+"[0.0]").c_str()); // uncorrelated
+  wspace->factory(("np_tt_qcdCRErrD3Bin6_"+year+"[0.0]").c_str()); // uncorrelated
+  wspace->factory(("np_tt_qcdCRErrD4Bin1_"+year+"[0.0]").c_str()); // uncorrelated
+  wspace->factory(("np_tt_qcdCRErrD4Bin2_"+year+"[0.0]").c_str()); // uncorrelated
+  wspace->factory(("np_tt_qcdCRErrD4Bin3_"+year+"[0.0]").c_str()); // uncorrelated
+  wspace->factory(("np_tt_qcdCRErrD4Bin4_"+year+"[0.0]").c_str()); // uncorrelated
+  wspace->factory(("np_tt_qcdCRErrD4Bin5_"+year+"[0.0]").c_str()); // uncorrelated
+  wspace->factory(("np_tt_qcdCRErrD4Bin6_"+year+"[0.0]").c_str()); // uncorrelated
 
   // Load in the histograms with the bin-by-bin ratios to be used in the ttbar shape systematics
   TFile* tt_syst_file = TFile::Open((infile_path+"/ttbar_systematics.root").c_str());
@@ -457,26 +456,12 @@ void make_MVA_8bin_ws(const std::string year = "2016", const std::string infile_
   TH1D* tt_qcdCRErr_D3 = (TH1D*)tt_syst_file->Get("D3_qcdCRErr");
   TH1D* tt_qcdCRErr_D4 = (TH1D*)tt_syst_file->Get("D4_qcdCRErr");
 
-  //Get qcd control region R value functions and store them in a map
-  TFile* qcdcrFile = TFile::Open((infile_path+"/qcdcr-syst-parameters.root").c_str());
-  TTreeReader reader("qcdCR_syst_parameters", qcdcrFile);
-  TTreeReaderValue<int> yearTree(reader,"year");
-  TTreeReaderValue<int> Njets(reader,"Njets");
-  TTreeReaderValue<int> MVAbin(reader,"MVAbin");
-  TTreeReaderValue<double> coef0(reader,"coef0");
-  TTreeReaderValue<double> coef1(reader,"coef1");
-  TTreeReaderValue<double> coef2(reader,"coef2");
-  TTreeReaderValue<double> coef3(reader,"coef3");
-
-  std::map<std::string,std::map<std::string, std::map<int, std::vector<double>>>> qcdcrMap;
-  while(reader.Next()) qcdcrMap[std::to_string(*yearTree)]["MVABin"+std::to_string(*MVAbin)][*Njets] = {*coef0, *coef1, *coef2, *coef3};
-
   // ----------------------  MVA bin 1  ------------------
-  
+
   // Dataset with 8 bins -- now 6
   RooDataHist data_hist_D1("data_obs_D1","Data observed in MVA bin 1",vars_D1,data_th1_D1);
   wspace->import(data_hist_D1);
-  
+
   //list of nuisance parameters for tt bkg D1
   const std::vector<NuisanceParam>& nuisanceParams_D1 = {
       {*wspace->var(("np_tt_JECUp_"+year).c_str()), tt_syst_JECUp_D1},
@@ -485,11 +470,14 @@ void make_MVA_8bin_ws(const std::string year = "2016", const std::string infile_
       {*wspace->var(("np_tt_lep_"+year).c_str()),   tt_syst_lep_D1},
       {*wspace->var(("np_tt_nom_"+year).c_str()),   tt_syst_nom_D1},
       {
-          *wspace->var(("np_tt_qcdCR_"+year).c_str()), qcdcrMap[year]["MVABin1"],
-          {
-              *wspace->var(("np_tt_qcdCRD1Coef1_"+year).c_str()),
-              *wspace->var(("np_tt_qcdCRD1Coef2_"+year).c_str()),
-              *wspace->var(("np_tt_qcdCRD1Coef3_"+year).c_str()),
+          *wspace->var(("np_tt_qcdCR_"+year).c_str()),   tt_syst_qcdCR_D1, tt_qcdCRErr_D1, 
+          { 
+              *wspace->var(("np_tt_qcdCRErrD1Bin1_"+year).c_str()),
+              *wspace->var(("np_tt_qcdCRErrD1Bin2_"+year).c_str()),
+              *wspace->var(("np_tt_qcdCRErrD1Bin3_"+year).c_str()),
+              *wspace->var(("np_tt_qcdCRErrD1Bin4_"+year).c_str()),
+              *wspace->var(("np_tt_qcdCRErrD1Bin5_"+year).c_str()),
+              *wspace->var(("np_tt_qcdCRErrD1Bin6_"+year).c_str()),
           }
       },
       {*wspace->var("np_tt_pdf"),                     tt_syst_pdf_D1},
@@ -504,10 +492,12 @@ void make_MVA_8bin_ws(const std::string year = "2016", const std::string infile_
       {*wspace->var(("np_tt_JERDown_"+year).c_str()), tt_syst_JERDown_D1}
   };
   
+  //std::cout << "test" << std::endl;
   RooArgList *bkg_tt_bins_D1 = new RooArgList();
   std::string procName_D1 = "background_tt_D1_"+year;
   if (shared) 
   {
+    //std::cout << "test shared" << std::endl;
     RooArgList parlist_D1(N7_tt_D1,a0_tt,a1_tt,d_tt);  // list of shape parameters for tt bkg
     //RooArgList parlist_D1(N7_tt_D1,a0_tt,a1_tt,a2_tt);  // list of shape parameters for tt bkg                                
     construct_formula(procName_D1,*bkg_tt_bins_D1,parlist_D1,nuisanceParams_D1);
@@ -518,13 +508,14 @@ void make_MVA_8bin_ws(const std::string year = "2016", const std::string infile_
     //RooArgList parlist_D1(N7_tt_D1,a0_tt_D1,a1_tt_D1,a2_tt_D1);  // list of shape parameters for tt bkg
     construct_formula(procName_D1,*bkg_tt_bins_D1,parlist_D1,nuisanceParams_D1);
   }
+  std::cout << "test" << std::endl;
   RooParametricHist background_tt_D1(procName_D1.c_str(),"",*wspace->var("CMS_th1x"),*bkg_tt_bins_D1,*data_th1_D1);
   wspace->import(background_tt_D1,RooFit::RecycleConflictNodes());
   std::stringstream procNameD1Norm;
   procNameD1Norm << procName_D1 << "_norm";
   RooAddition tt_norm_D1(procNameD1Norm.str().c_str(),"",*bkg_tt_bins_D1);
   wspace->import(tt_norm_D1,RooFit::RecycleConflictNodes());
-  
+
   // ---------------------- MVA bin 2  ------------------
   
   // Dataset with 8 bins
@@ -539,11 +530,14 @@ void make_MVA_8bin_ws(const std::string year = "2016", const std::string infile_
       {*wspace->var(("np_tt_lep_"+year).c_str()),   tt_syst_lep_D2},
       {*wspace->var(("np_tt_nom_"+year).c_str()),   tt_syst_nom_D2},
       {
-          *wspace->var(("np_tt_qcdCR_"+year).c_str()), qcdcrMap[year]["MVABin2"],
-          {
-              *wspace->var(("np_tt_qcdCRD2Coef1_"+year).c_str()),
-              *wspace->var(("np_tt_qcdCRD2Coef2_"+year).c_str()),
-              *wspace->var(("np_tt_qcdCRD2Coef3_"+year).c_str()),
+          *wspace->var(("np_tt_qcdCR_"+year).c_str()),   tt_syst_qcdCR_D2, tt_qcdCRErr_D2, 
+          { 
+              *wspace->var(("np_tt_qcdCRErrD2Bin1_"+year).c_str()),
+              *wspace->var(("np_tt_qcdCRErrD2Bin2_"+year).c_str()),
+              *wspace->var(("np_tt_qcdCRErrD2Bin3_"+year).c_str()),
+              *wspace->var(("np_tt_qcdCRErrD2Bin4_"+year).c_str()),
+              *wspace->var(("np_tt_qcdCRErrD2Bin5_"+year).c_str()),
+              *wspace->var(("np_tt_qcdCRErrD2Bin6_"+year).c_str()),
           }
       },
       {*wspace->var("np_tt_pdf"),                     tt_syst_pdf_D2},
@@ -592,11 +586,14 @@ void make_MVA_8bin_ws(const std::string year = "2016", const std::string infile_
       {*wspace->var(("np_tt_lep_"+year).c_str()),   tt_syst_lep_D3},
       {*wspace->var(("np_tt_nom_"+year).c_str()),   tt_syst_nom_D3},
       {
-          *wspace->var(("np_tt_qcdCR_"+year).c_str()), qcdcrMap[year]["MVABin3"],
-          {
-              *wspace->var(("np_tt_qcdCRD3Coef1_"+year).c_str()),
-              *wspace->var(("np_tt_qcdCRD3Coef2_"+year).c_str()),
-              *wspace->var(("np_tt_qcdCRD3Coef3_"+year).c_str()),
+          *wspace->var(("np_tt_qcdCR_"+year).c_str()),   tt_syst_qcdCR_D3, tt_qcdCRErr_D3, 
+          { 
+              *wspace->var(("np_tt_qcdCRErrD3Bin1_"+year).c_str()),
+              *wspace->var(("np_tt_qcdCRErrD3Bin2_"+year).c_str()),
+              *wspace->var(("np_tt_qcdCRErrD3Bin3_"+year).c_str()),
+              *wspace->var(("np_tt_qcdCRErrD3Bin4_"+year).c_str()),
+              *wspace->var(("np_tt_qcdCRErrD3Bin5_"+year).c_str()),
+              *wspace->var(("np_tt_qcdCRErrD3Bin6_"+year).c_str()),
           }
       },
       {*wspace->var("np_tt_pdf"),                     tt_syst_pdf_D3},
@@ -610,7 +607,7 @@ void make_MVA_8bin_ws(const std::string year = "2016", const std::string infile_
       {*wspace->var(("np_tt_JECDown_"+year).c_str()), tt_syst_JECDown_D3},
       {*wspace->var(("np_tt_JERDown_"+year).c_str()), tt_syst_JERDown_D3}
   };
-  
+
   RooArgList *bkg_tt_bins_D3 = new RooArgList();
   std::string procName_D3 = "background_tt_D3_"+year;
   if (shared) 
@@ -645,11 +642,14 @@ void make_MVA_8bin_ws(const std::string year = "2016", const std::string infile_
       {*wspace->var(("np_tt_lep_"+year).c_str()),   tt_syst_lep_D4},
       {*wspace->var(("np_tt_nom_"+year).c_str()),   tt_syst_nom_D4},
       {
-          *wspace->var(("np_tt_qcdCR_"+year).c_str()), qcdcrMap[year]["MVABin4"],
-          {
-              *wspace->var(("np_tt_qcdCRD4Coef1_"+year).c_str()),
-              *wspace->var(("np_tt_qcdCRD4Coef2_"+year).c_str()),
-              *wspace->var(("np_tt_qcdCRD4Coef3_"+year).c_str()),
+          *wspace->var(("np_tt_qcdCR_"+year).c_str()),   tt_syst_qcdCR_D4, tt_qcdCRErr_D4, 
+          { 
+              *wspace->var(("np_tt_qcdCRErrD4Bin1_"+year).c_str()),
+              *wspace->var(("np_tt_qcdCRErrD4Bin2_"+year).c_str()),
+              *wspace->var(("np_tt_qcdCRErrD4Bin3_"+year).c_str()),
+              *wspace->var(("np_tt_qcdCRErrD4Bin4_"+year).c_str()),
+              *wspace->var(("np_tt_qcdCRErrD4Bin5_"+year).c_str()),
+              *wspace->var(("np_tt_qcdCRErrD4Bin6_"+year).c_str()),
           }
       },
       {*wspace->var("np_tt_pdf"),                     tt_syst_pdf_D4},
@@ -707,7 +707,7 @@ void make_MVA_8bin_ws(const std::string year = "2016", const std::string infile_
   otherMC_th1_D2->Write();
   otherMC_th1_D3->Write();
   otherMC_th1_D4->Write();
-  
+
   // Shape histograms for QCD backgrounds
   qcdMC_th1_D1->SetName("qcdMC_th1_D1");
   qcdMC_th1_D2->SetName("qcdMC_th1_D2");
@@ -717,7 +717,7 @@ void make_MVA_8bin_ws(const std::string year = "2016", const std::string infile_
   qcdMC_th1_D2->Write();
   qcdMC_th1_D3->Write();
   qcdMC_th1_D4->Write();
-  
+
   // Shape histograms for TTX backgrounds
   ttxMC_th1_D1->SetName("ttxMC_th1_D1");
   ttxMC_th1_D2->SetName("ttxMC_th1_D2");
@@ -793,20 +793,20 @@ void make_MVA_8bin_ws(const std::string year = "2016", const std::string infile_
       // Particular signal model and mass point
       WriteHisto2WS<TH1D>(file, model+"_"+mass+"_mcStatBin"+i+"Up",   i+"_"+year+"Up",   {"D1","D2","D3","D4"}, "SIG");      
       WriteHisto2WS<TH1D>(file, model+"_"+mass+"_mcStatBin"+i+"Down", i+"_"+year+"Down", {"D1","D2","D3","D4"}, "SIG");      
-  
+
       // OTHER backgrounds
       WriteHisto2WS<TH1D>(file, "OTHER_mcStatBin"+i+"Up",   i+"_"+year+"Up",   {"D1","D2","D3","D4"}, "OTHER");      
       WriteHisto2WS<TH1D>(file, "OTHER_mcStatBin"+i+"Down", i+"_"+year+"Down", {"D1","D2","D3","D4"}, "OTHER");      
-  
+
       // QCD backgrounds
       WriteHisto2WS<TH1D>(file, "QCD_mcStatBin"+i+"Up",   i+"_"+year+"Up",   {"D1","D2","D3","D4"}, "QCD");      
       WriteHisto2WS<TH1D>(file, "QCD_mcStatBin"+i+"Down", i+"_"+year+"Down", {"D1","D2","D3","D4"}, "QCD");      
-  
+
       // TTX backgrounds
       WriteHisto2WS<TH1D>(file, "TTX_mcStatBin"+i+"Up",   i+"_"+year+"Up",   {"D1","D2","D3","D4"}, "TTX");      
       WriteHisto2WS<TH1D>(file, "TTX_mcStatBin"+i+"Down", i+"_"+year+"Down", {"D1","D2","D3","D4"}, "TTX");      
   }
-  
+
   //Finally write out the work space
   wspace->Write();
   

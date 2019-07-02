@@ -11,11 +11,6 @@ set seed = $8
 set numToys = $9
 set iterations = $10
 set doToyS = $11
-set syst = $12
-
-if ($syst == None) then
-    set syst=""
-endif
 
 set base_dir = `pwd`
 printf "\n\n base dir is $base_dir\n\n"
@@ -60,20 +55,17 @@ xrdcp root://cmseos.fnal.gov//store/user/lpcsusyhad/StealthStop/FitInputs/${inpu
 eval `scramv1 runtime -csh`
 
 combineCards.py Y16=Card2016.txt Y17=Card2017.txt > CardCombo.txt
-root -l -q -b 'make_MVA_8bin_ws.C("2016","'${inputRoot2016}'","'${signalType}'","'${mass}'","'${dataType}'","'${syst}'")'
-root -l -q -b 'make_MVA_8bin_ws.C("2017","'${inputRoot2017}'","'${signalType}'","'${mass}'","'${dataType}'","'${syst}'")'
+root -l -q -b 'make_MVA_8bin_ws.C("2016","'${inputRoot2016}'","'${signalType}'","'${mass}'","'${dataType}'")'
+root -l -q -b 'make_MVA_8bin_ws.C("2017","'${inputRoot2017}'","'${signalType}'","'${mass}'","'${dataType}'")'
 text2workspace.py Card${year}.txt -o ws_${year}_${signalType}_${mass}.root -m ${mass} --keyword-value MODEL=${signalType}
 
 if ($doToyS == 1) then
     printf "\n\n Running sig. toys\n"
-    combine -M HybridNew --LHCmode LHC-significance ws_${year}_${signalType}_${mass}.root -m ${mass} --keyword-value MODEL=${signalType} -n ${year} --saveToys --saveHybridResult -T ${numToys} -s ${seed} --fullBToys -i ${iterations} > log_tmp.txt
+    combine -M HybridNew --LHCmode LHC-significance ws_${year}_${signalType}_${mass}.root -m ${mass} --keyword-value MODEL=${signalType} -n ${year} --saveToys --saveHybridResult -T ${numToys} -s ${seed} --fullBToys -i ${iterations}
 else
     printf "\n\n Running limit toys\n"
-    combine -M HybridNew --LHCmode LHC-limits       ws_${year}_${signalType}_${mass}.root -m ${mass} --keyword-value MODEL=${signalType} -n ${year} --saveToys --saveHybridResult -T ${numToys} -s ${seed} --fullBToys --singlePoint ${rVal} --clsAcc 0 > log_tmp.txt 
+    combine -M HybridNew --LHCmode LHC-limits       ws_${year}_${signalType}_${mass}.root -m ${mass} --keyword-value MODEL=${signalType} -n ${year} --saveToys --saveHybridResult -T ${numToys} -s ${seed} --fullBToys --singlePoint ${rVal} --clsAcc 0 
 endif
-
-#removing log files because they can be larger than 1G
-rm log_tmp.txt
 
 printf "\n\n ls output\n"
 ls -l
