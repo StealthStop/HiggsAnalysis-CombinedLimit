@@ -10,6 +10,11 @@ set doAsym = $7
 set doFitDiag = $8
 set doMulti = $9
 set inject = $10
+set syst = $11
+
+if ($syst == None) then
+    set syst=""
+endif
 
 set base_dir = `pwd`
 printf "\n\n base dir is $base_dir\n\n"
@@ -24,7 +29,7 @@ printf "\n\n Get the code needed .\n\n"
 cmsrel CMSSW_8_1_0
 cd CMSSW_8_1_0/src
 eval `scramv1 runtime -csh`
-git clone https://github.com/StealthStop/HiggsAnalysis-CombinedLimit.git HiggsAnalysis/CombinedLimit
+git clone -b Chris_temp https://github.com/StealthStop/HiggsAnalysis-CombinedLimit.git HiggsAnalysis/CombinedLimit
 cd $CMSSW_BASE/src/HiggsAnalysis/CombinedLimit
 scram b clean
 scram b -j8
@@ -46,23 +51,24 @@ printf "\n\n Attempting to run Fit executable.\n\n"
 mkdir ${inputRoot2016}
 xrdcp root://cmseos.fnal.gov//store/user/lpcsusyhad/StealthStop/FitInputs/${inputRoot2016}/njets_for_Aron.root     ${inputRoot2016}/.
 xrdcp root://cmseos.fnal.gov//store/user/lpcsusyhad/StealthStop/FitInputs/${inputRoot2016}/ttbar_systematics.root  ${inputRoot2016}/.
+xrdcp root://cmseos.fnal.gov//store/user/lpcsusyhad/StealthStop/FitInputs/${inputRoot2016}/qcdcr-syst-parameters.root  ${inputRoot2016}/.
 
 mkdir ${inputRoot2017}
 xrdcp root://cmseos.fnal.gov//store/user/lpcsusyhad/StealthStop/FitInputs/${inputRoot2017}/njets_for_Aron.root     ${inputRoot2017}/.
 xrdcp root://cmseos.fnal.gov//store/user/lpcsusyhad/StealthStop/FitInputs/${inputRoot2017}/ttbar_systematics.root  ${inputRoot2017}/.
+xrdcp root://cmseos.fnal.gov//store/user/lpcsusyhad/StealthStop/FitInputs/${inputRoot2017}/qcdcr-syst-parameters.root  ${inputRoot2017}/.
 
 eval `scramv1 runtime -csh`
 
 combineCards.py Y16=Card2016.txt Y17=Card2017.txt > CardCombo.txt
-root -l -q -b 'make_MVA_8bin_ws.C("2016","'${inputRoot2016}'","'${signalType}'","'${mass}'","'${dataType}'")'
-root -l -q -b 'make_MVA_8bin_ws.C("2017","'${inputRoot2017}'","'${signalType}'","'${mass}'","'${dataType}'")'
+root -l -q -b 'make_MVA_8bin_ws.C("2016","'${inputRoot2016}'","'${signalType}'","'${mass}'","'${dataType}'","'${syst}'")'
+root -l -q -b 'make_MVA_8bin_ws.C("2017","'${inputRoot2017}'","'${signalType}'","'${mass}'","'${dataType}'","'${syst}'")'
 text2workspace.py Card${year}.txt -o ws_${year}_${signalType}_${mass}.root -m ${mass} --keyword-value MODEL=${signalType}
 
 if ($doAsym == 1) then
     combine -M AsymptoticLimits   ws_${year}_${signalType}_${mass}.root -m ${mass} --keyword-value MODEL=${signalType} --verbose 2 --cminDefaultMinimizerStrategy 1 --cminFallbackAlgo Minuit2,Migrad,0:0.1 --cminFallbackAlgo Minuit2,Migrad,1:1.0 --cminFallbackAlgo Minuit2,Migrad,0:1.0 --X-rtd MINIMIZER_MaxCalls=999999999 --X-rtd MINIMIZER_analytic --X-rtd FAST_VERTICAL_MORPH --rMax 5                        -n ${year}                               > log_${year}${signalType}${mass}_Asymp.txt
     combine -M Significance       ws_${year}_${signalType}_${mass}.root -m ${mass} --keyword-value MODEL=${signalType} --verbose 2 --cminDefaultMinimizerStrategy 1 --cminFallbackAlgo Minuit2,Migrad,0:0.1 --cminFallbackAlgo Minuit2,Migrad,1:1.0 --cminFallbackAlgo Minuit2,Migrad,0:1.0 --X-rtd MINIMIZER_MaxCalls=999999999 --X-rtd MINIMIZER_analytic --X-rtd FAST_VERTICAL_MORPH --rMax 5 -t -1 --expectSignal=1 -n ${year}${signalType}${mass}_SignifExp > log_${year}${signalType}${mass}_Sign_sig.txt
     combine -M Significance       ws_${year}_${signalType}_${mass}.root -m ${mass} --keyword-value MODEL=${signalType} --verbose 2 --cminDefaultMinimizerStrategy 1 --cminFallbackAlgo Minuit2,Migrad,0:0.1 --cminFallbackAlgo Minuit2,Migrad,1:1.0 --cminFallbackAlgo Minuit2,Migrad,0:1.0 --X-rtd MINIMIZER_MaxCalls=999999999 --X-rtd MINIMIZER_analytic --X-rtd FAST_VERTICAL_MORPH --rMax 5                        -n ${year}${signalType}${mass}_SignifExp > log_${year}${signalType}${mass}_Sign_noSig.txt
-    combine -M Significance       ws_${year}_${signalType}_${mass}.root -m ${mass} --keyword-value MODEL=${signalType} --verbose 2 --cminDefaultMinimizerStrategy 1 --cminFallbackAlgo Minuit2,Migrad,0:0.1 --cminFallbackAlgo Minuit2,Migrad,1:1.0 --cminFallbackAlgo Minuit2,Migrad,0:1.0 --X-rtd MINIMIZER_MaxCalls=999999999 --X-rtd MINIMIZER_analytic --X-rtd FAST_VERTICAL_MORPH --rMax 5 --pvalue               -n ${year}${signalType}${mass}_SignifExp > log_${year}${signalType}${mass}_Sign_noSig_pvalue.txt
 endif
 if ($doFitDiag == 1) then
     if ($inject == 0) then
@@ -73,6 +79,7 @@ if ($doFitDiag == 1) then
 endif
 if ($doMulti == 1) then
     combine -M MultiDimFit        ws_${year}_${signalType}_${mass}.root -m ${mass} --keyword-value MODEL=${signalType} --verbose 0 --cminDefaultMinimizerStrategy 1 --cminFallbackAlgo Minuit2,Migrad,0:0.1 --cminFallbackAlgo Minuit2,Migrad,1:1.0 --cminFallbackAlgo Minuit2,Migrad,0:1.0 --X-rtd MINIMIZER_MaxCalls=999999999 --X-rtd MINIMIZER_analytic --X-rtd FAST_VERTICAL_MORPH --rMax 5 --algo=grid --points=100                                -n SCAN_r_wSig                           > log_${year}${signalType}${mass}_multiDim.txt
+    rm log_${year}${signalType}${mass}_multiDim.txt
 endif
 
 printf "\n\n ls output\n"

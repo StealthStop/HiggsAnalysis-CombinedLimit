@@ -163,12 +163,15 @@ def makeSigTex(name, l):
     f.write( "\\documentclass[12pt]{article}\n" )
     f.write( "\n" ) 
     f.write( "\\begin{document}\n" )
+    f.write( "\\pagenumbering{gobble}\n" )
     f.write( "\n" )
 
     for dic in l:
         caption = "Best fit signal strengths for %s model in data" % dic["model"]
         if dic["runtype"] == "pseudoDataS": 
             caption = "Best fit signal strengths for %s model in MC with signal injection" % dic["model"] 
+        elif dic["runtype"] == "pseudoData": 
+            caption = "Best fit signal strengths for %s model in MC" % dic["model"] 
         f.write( "\\begin{table}[p]\n" )
         f.write( "\\centering\n" )
         f.write( "\\caption{%s}\n" % caption )
@@ -190,7 +193,7 @@ def main():
     Mass & Best fit signal strength & Observed Significance & p-value\\\\ \hline
     """    
     path = options.basedir
-    runtypes = ["Data", "pseudoDataS"]
+    runtypes = ["Data", "pseudoData", "pseudoDataS"]
     models = ["RPV","SYY"]
     years = ["2016","2017","Combo"]
     masses = ["300","350","400","450","500","550","600","650","700","750","800","850","900"]
@@ -210,7 +213,7 @@ def main():
                 for mass in masses:
                     print "Year %s, Model %s, Mass %s"%(year, model, mass)
                     filename_r = "%s/Fit_%s_%s/output-files/%s_%s_%s/log_%s%s%s_FitDiag.txt" % (path,runtype, year, model, mass, year, year, model, mass)
-                    info_r = ["0","0","0"]
+                    info_r = ["-1","-1","-1"]
     
                     # Get r from fit jobs
                     if not ((model=="RPV" and year=="Combo" and mass=="0") or (model=="SYY" and year=="Combo" and mass=="0") ):
@@ -230,8 +233,8 @@ def main():
                                     info_r = line_r.split() # best fit r, -error, +error
         
                     # Get sigma and p-value from fit jobs
-                    line_sig = ""
-                    line_pvalue = ""
+                    line_sig = "-1"
+                    line_pvalue = "-1"
                     if not ((model=="RPV" and year=="Combo" and mass=="0") or (model=="SYY" and year=="2017" and mass in ["0"])):
                         filename_sig = "%s/Fit_%s_%s/output-files/%s_%s_%s/log_%s%s%s_Sign_noSig.txt" % (path,runtype, year, model, mass, year, year, model, mass)
                         file_sig=-1
@@ -265,6 +268,7 @@ def main():
                         file_table.write("%s & $%.2f_{%.2f}^{%.2f}$ & %s & %s\\\\ \n" % (mass, float(info_r[0]), float(info_r[1]), float(info_r[2].replace("+-","+")), line_sig, line_pvalue))
                     else:
                         file_table.write("%s & $%.2f_{%.2f}^{%.2f}$ & %.2f & %s\\\\ \n" % (mass, float(info_r[0]), float(info_r[1]), float(info_r[2].replace("+-","+")), float(line_sig), line_pvalue))
+
                 file_table.write("\\hline \n")
                 dataSet["data"][year]=data
             file_table.write("\\end{tabular}\n")

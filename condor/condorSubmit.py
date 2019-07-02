@@ -24,6 +24,7 @@ def main():
     parser.add_option ('--inPut_2017',  dest='inputRoot2017',  type='string', default = 'Keras_V3.0.2_v1_DataQCDShape', help="input root file directory: 2017")
     parser.add_option ('-d',            dest='signalType',     type='string', default = '',                help="List of signal model, comma separated")
     parser.add_option ('-t',            dest='dataType',       type='string', default = 'data',            help="Specify if running over data or pseudo data")
+    parser.add_option ('--syst',        dest='syst',           type='string', default = 'None',            help="Specify what systimatic variation you want when picking a dataType")
     parser.add_option ('-m',            dest='masssets',       type='string', default = '',                help="List of mass models, comma separated")
     parser.add_option ('-y',            dest='year',           type='string', default = '2016',            help="year")
     parser.add_option ('-c',            dest='noSubmit', action='store_true', default = False,             help="Do not submit jobs.  Only create condor_submit.txt.")
@@ -97,7 +98,6 @@ def main():
                     "log_%s%s%s_FitDiag.txt"    % (options.year, st, mass),
                     "log_%s%s%s_Sign_sig.txt"   % (options.year, st, mass),
                     "log_%s%s%s_Sign_noSig.txt" % (options.year, st, mass),
-                    "log_%s%s%s_Sign_noSig_pvalue.txt" % (options.year, st, mass),
                     "log_%s%s%s_multiDim.txt"   % (options.year, st, mass),
                     "log_%s%s%s_HybridNew.txt"  % (options.year, st, mass),
                 ]
@@ -110,7 +110,8 @@ def main():
                 transfer += "\"\n"
                     
                 fileParts.append(transfer)
-                fileParts.append("Arguments = %s %s %s %s %s %s %i %i %i %s\n" % (options.inputRoot2016, options.inputRoot2017, st, mass, options.year, options.dataType, doAsym, doFitDiag, doMulti, options.inject))
+                fileParts.append("Arguments = %s %s %s %s %s %s %i %i %i %s %s\n" % (options.inputRoot2016, options.inputRoot2017, st, mass, options.year, 
+                                                                                     options.dataType, doAsym, doFitDiag, doMulti, options.inject, options.syst))
                 fileParts.append("Output = %s/log-files/MyFit_%s_%s.stdout\n"%(options.outPath, st, mass))
                 fileParts.append("Error = %s/log-files/MyFit_%s_%s.stderr\n"%(options.outPath, st, mass))
                 fileParts.append("Log = %s/log-files/MyFit_%s_%s.log\n"%(options.outPath, st, mass))
@@ -149,8 +150,8 @@ def main():
                         transfer += "\"\n"
 
                         fileParts.append(transfer)
-                        fileParts.append("Arguments = %s %s %s %s %s %s %s %s %s %s %s\n" % (options.inputRoot2016, options.inputRoot2017, st, mass, options.year, 
-                                                                                             options.dataType, str(r), str(seed), str(options.numToys), str(options.iterations), str(doToyS)))
+                        fileParts.append("Arguments = %s %s %s %s %s %s %s %s %s %s %s %s\n" % (options.inputRoot2016, options.inputRoot2017, st, mass, options.year, 
+                                                                                             options.dataType, str(r), str(seed), str(options.numToys), str(options.iterations), str(doToyS), options.syst))
                         fileParts.append("Output = %s/log-files/MyFit_%s_%s_%s_%s.stdout\n"%(options.outPath, st, mass, str(r), str(seed)))
                         fileParts.append("Error = %s/log-files/MyFit_%s_%s_%s_%s.stderr\n"%(options.outPath, st, mass, str(r), str(seed)))
                         fileParts.append("Log = %s/log-files/MyFit_%s_%s_%s_%s.log\n"%(options.outPath, st, mass, str(r), str(seed)))
