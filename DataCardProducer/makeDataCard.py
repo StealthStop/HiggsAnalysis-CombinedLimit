@@ -195,8 +195,8 @@ def main():
         if(options.histoName == "all"):
             for h in histos:
                 getCard(options.signalName,h)
-            else:
-                getCard(options.signalName,options.histoName)
+        else:
+            getCard(options.signalName,options.histoName)
 
 if __name__ == "__main__":
     main()
