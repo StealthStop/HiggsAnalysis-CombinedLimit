@@ -374,3 +374,26 @@ python makeFitPlots.py --twosigfit --bkgonlyfit --mass1 450 --model1 RPV --mass2
 ```
 
 This would extract the background-only fit as well as RPV 450 signal shape and RPV 850 signal shape. All these histograms get put into a ROOT file called `KELVIN_RPV450Combo16b.root`. Then we call `makeFitPlots.py` and ask it to show both signal shapes (thus we pass information about both signals---model and mass) and explicitly say we want the background-only fit.
+
+### Example for running makeDataCard.py
+
+This script will produce can produce either one or multiple data cards based on command line arguments. An example of running the script to make a single card is shown below.
+
+```
+cd DataCardProducer
+python makeDataCard.py -s RPV350 -H h_Mass_stop1vsstop2_PtRank_0l_HT500_ge2b_ge6j_ge2t_ge1dRbjets
+```
+
+The data card is produced in the new "Cards" directory with DataCardProducer. You can then compute a significance with this card by running the following command.
+
+```
+combine -M Significance path/to/datacard.txt -t -1 --expectSignal=1
+```
+
+To use the runCombineTool.py script over the full set of data cards, you can run makeDataCard.py with the default command line arguments to produce all the data cards and move them to the directory "CombinedLimit/TopSeed_Cards". You can then compute the significance for each of the signal models and variables and receive the output in a text file using the following command.
+
+```
+python runCombineTool.py
+```
+
+The significance values are output in the file "ExpectedSignificance.txt".
