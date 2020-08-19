@@ -6,18 +6,18 @@ lumi = 1.05
 background = {
     "TT" : {
         "path" : "2016_TT.root",
-        "sys"  : 1.204
+        "sys"  : 1.2
     },
 #    "QCD" : {
  #       "path" : "None",
- #       "sys"  : 1.504
+ #       "sys"  : 1.2
 #    }
 }
 #all signals are entries in the dictionary. the path to the root file (starting from the base path) and the systematic uncertainty are specified 
 signal = {
     "RPV350" : {
         "path" : "2016_RPV_2t6j_mStop-350.root",
-        "sys"  : 1.50
+        "sys"  : "--"
 
     },
 #    "RPV550" : {

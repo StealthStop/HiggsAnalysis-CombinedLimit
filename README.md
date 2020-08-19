@@ -397,3 +397,18 @@ python runCombineTool.py
 ```
 
 The significance values are output in the file "ExpectedSignificance.txt".
+
+### Using makeDataCard1D.py
+
+`makeDataCard1D.py` is a script for making data cards from 1D histograms. It takes a configuration file as an input in the style of `DataCardProducer/cardConfig.py`.
+
+Arguments:
+
+- `-c, --config [config file]` configuration file in the style of `DataCardProducer/cardConfig.py`.
+- `-o, --output [output path]` path to output destination. Writes to `datacard.txt` by default.
+
+Example usage:
+
+```
+python makeDataCard1D.py -c cardConfig -o mydatacard.txt
+```

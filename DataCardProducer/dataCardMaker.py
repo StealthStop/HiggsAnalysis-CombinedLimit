@@ -77,7 +77,7 @@ class dataCardMaker:
                     process1_str += "{0:<12}".format(proc)
                     process2_str += "{0:<12}".format(0)
                     rate_str += "{0:<12}".format(self.signal[proc]["binValues"][bin])
-                cnt = 1
+                cnt = 0
                 for proc in self.background.keys():
                     cnt += 1
                     temp_str = "D{}".format(bin)
