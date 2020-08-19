@@ -35,9 +35,9 @@ histos = {
 #other systematics. list the name of background/signal the systematic applies to under the "apply" key
 othersys = {
 
-    "s1" : {
-        "sys" : 2.05,
-        "distr" : "gmN 4",
-        "apply" : ["TT"]
-    }
+    #"s1" : {
+    #    "sys" : 2.05,
+    #    "distr" : "gmN 4",
+    #    "apply" : ["TT"]
+    #}
 }

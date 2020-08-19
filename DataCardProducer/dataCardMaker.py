@@ -91,7 +91,8 @@ class dataCardMaker:
             file.write(rate_str)
             process2_str = "{0:<15}".format("\nprocess")
             file.write("\n--------------------------")
-            lumi_str = "{0:<15}".format("\nlumi")
+            lumi_str = "{0:<8}".format("\nlumi")
+            lumi_str += "{0:<7}".format("lnN")
             for bin in range(self.nbins):
                 for proc in range(len(self.signal.keys()) + len(self.background.keys())):
                     lumi_str += "{0:<12}".format(1.02)
@@ -105,6 +106,7 @@ class dataCardMaker:
                             sig_str += "{0:<12}".format(self.signal[signal1]["sys"])
                         else:
                             sig_str += "{0:<12}".format("--")
+                sig_str += "{0:<12}".format("--")*len(self.background.keys())
                 file.write(sig_str)
             for background1 in self.background.keys():
                 bg_str = "{0:<8}".format("\n"+background1)
