@@ -1,5 +1,4 @@
 import ROOT
-#from cardConfig import path,signal,background,histos,othersys,lumi
 
 class dataCardMaker:
 
@@ -18,7 +17,7 @@ class dataCardMaker:
         self.nbins = 0
         for sg in self.signal.keys():
             binValues = []
-            tfile = ROOT.TFile.Open(path+self.signal[sg]["path"])
+            tfile = ROOT.TFile.Open(self.path+self.signal[sg]["path"])
             for hist in self.histos.keys():
                 h = tfile.Get(self.histos[hist]["name"])
                 histbins = h.GetNbinsX()
@@ -29,7 +28,7 @@ class dataCardMaker:
             self.signal[sg]["binValues"] = binValues
         for bg in self.background.keys():
             binValues = []
-            tfile = ROOT.TFile.Open(path+self.background[bg]["path"])
+            tfile = ROOT.TFile.Open(self.path+self.background[bg]["path"])
             for hist in self.histos.keys():
                 h = tfile.Get(self.histos[hist]["name"])
                 histbins = h.GetNbinsX()
@@ -39,7 +38,7 @@ class dataCardMaker:
                     binValues.append(val)
             self.background[bg]["binValues"] = binValues
         for hist in self.histos.keys():
-            self.nbins += histos[hist]["nbins"]
+            self.nbins += self.histos[hist]["nbins"]
         self.observedPerBin = []        
         for n in range(self.nbins):
             obs = 0
@@ -135,5 +134,4 @@ class dataCardMaker:
                                 sys_str += "{0:<12}".format("--")
                     file.write(sys_str)
                     
-#dataCardMaker(path, signal, background, histos, lumi, "datacard.txt", othersys)
 
