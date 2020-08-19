@@ -410,5 +410,6 @@ Arguments:
 Example usage:
 
 ```
+cd DataCardProducer
 python makeDataCard1D.py -c cardConfig -o mydatacard.txt
 ```
