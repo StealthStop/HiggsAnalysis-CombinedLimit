@@ -20,10 +20,16 @@ class dataCardMaker:
             tfile = ROOT.TFile.Open(self.path+self.signal[sg]["path"])
             for hist in self.histos.keys():
                 h = tfile.Get(self.histos[hist]["name"])
-                histbins = h.GetNbinsX()
-                skip = histbins/self.histos[hist]["nbins"] 
-                for bin in range(1, histbins, skip):
+                if self.histos[hist]["end"] == "last":
+                    lastbin = h.GetNbinsX()
+                else:
+                    lastbin = self.histos[hist]["end"]
+                histbins = lastbin - self.histos[hist]["start"] + 1
+                skip = histbins/self.histos[hist]["nbins"]
+                for bin in range(self.histos[hist]["start"], lastbin, skip):
                     val = round(h.Integral(bin, bin + skip), 1)
+                    #print("integrating from {} to {}. Value = {}".format(bin, bin + skip, round(h.Integral(bin, bin + skip), 1)))
+                    if val < 1: val = 1
                     binValues.append(val)
             self.signal[sg]["binValues"] = binValues
         for bg in self.background.keys():
@@ -31,14 +37,21 @@ class dataCardMaker:
             tfile = ROOT.TFile.Open(self.path+self.background[bg]["path"])
             for hist in self.histos.keys():
                 h = tfile.Get(self.histos[hist]["name"])
-                histbins = h.GetNbinsX()
+                if self.histos[hist]["end"] == "last":
+                    lastbin = h.GetNbinsX()
+                else:
+                    lastbin = self.histos[hist]["end"]
+                    
+                histbins = lastbin - self.histos[hist]["start"]
                 skip = histbins/self.histos[hist]["nbins"]
-                for bin in range(1, histbins, skip):
+                for bin in range(self.histos[hist]["start"], lastbin, skip):
                     val = round(h.Integral(bin, bin + skip), 1)
+                    if val < 1: val = 1
                     binValues.append(val)
             self.background[bg]["binValues"] = binValues
-        for hist in self.histos.keys():
-            self.nbins += self.histos[hist]["nbins"]
+        self.nbins = 0
+        for h in self.histos.keys():
+            self.nbins += self.histos[h]["nbins"]
         self.observedPerBin = []        
         for n in range(self.nbins):
             obs = 0
@@ -106,13 +119,13 @@ class dataCardMaker:
                             sig_str += "{0:<12}".format(self.signal[signal1]["sys"])
                         else:
                             sig_str += "{0:<12}".format("--")
-                sig_str += "{0:<12}".format("--")*len(self.background.keys())
+                    sig_str += "{0:<12}".format("--")*len(self.background.keys())
                 file.write(sig_str)
             for background1 in self.background.keys():
                 bg_str = "{0:<8}".format("\n"+background1)
                 bg_str += "{0:<7}".format("lnN")
-                bg_str += "{0:<12}".format("--")*len(self.signal.keys())                
                 for bin in range(self.nbins):
+                    bg_str += "{0:<12}".format("--")*len(self.signal.keys())                
                     for background2 in self.background.keys():
                         if background1 == background2:
                             bg_str += "{0:<12}".format(self.background[background1]["sys"])

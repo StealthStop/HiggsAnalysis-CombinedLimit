@@ -1,4 +1,4 @@
-path = "/uscms_data/d3/amercald/SUSY3/CMSSW_10_2_9/src/Analyzer/Analyzer/test/condor/MC_NotGoodLep_2016/"
+path = "/uscms_data/d3/amercald/SUSY3/CMSSW_10_2_9/src/Analyzer/Analyzer/test/condor/2016_MC_Significance2/"
 
 lumi = 1.05
 
@@ -28,8 +28,10 @@ signal = {
 #the names of the histograms to use along with number of bins to divide it into
 histos = {
     "h1" : {
-        "name"  : "h_Stop2Mass_",
-        "nbins" : 1
+        "name"  : "h_FatJet_Pruned_2_2l_2CandJets_ge1b_opfl",
+        "nbins" : 8,
+        "start" : 50,
+        "end"   : 150,
     },
 }
 #other systematics. list the name of background/signal the systematic applies to under the "apply" key
