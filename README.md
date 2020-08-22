@@ -398,9 +398,9 @@ python runCombineTool.py
 
 The significance values are output in the file "ExpectedSignificance.txt".
 
-### Using makeDataCard1D.py
+### Using produceDataCard.py
 
-`makeDataCard1D.py` is a script for making data cards from 1D histograms. It takes a configuration file as an input in the style of `DataCardProducer/cardConfig.py`.
+`produceDataCard1D.py` is a script for making data cards from 1D or 2D histograms. It takes a configuration file as an input in the style of `DataCardProducer/cardConfig.py` and outputs the data cacard to submit to Combine.
 
 Arguments:
 
@@ -411,5 +411,5 @@ Example usage:
 
 ```
 cd DataCardProducer
-python makeDataCard1D.py -c cardConfig -o mydatacard.txt
+python produceDataCard.py -c cardConfig -o mydatacard.txt
 ```

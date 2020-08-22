@@ -25,13 +25,13 @@ signal = {
 #        "sys"  : 1.504
 #    }
 }
-#the names of the histograms to use along with number of bins to divide it into
+#the names of the histograms to use along with number of bins to divide it into, which bin to start from, and which to end. use "last" to use the last bin
 histos = {
     "h1" : {
         "name"  : "h_FatJet_Pruned_2_2l_2CandJets_ge1b_opfl",
-        "nbins" : 8,
-        "start" : 50,
-        "end"   : 150,
+        "nbins" : 8, #if histogram is 2d, input as list [nbins x, nbins y]
+        "start" : 50, #if histogram is 2d, input as list [start x, start y]
+        "end"   : 150, #if histogram is 2d, input as list [end x, end y]
     },
 }
 #other systematics. list the name of background/signal the systematic applies to under the "apply" key
