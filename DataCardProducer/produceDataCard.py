@@ -1,4 +1,4 @@
-from dataCardMaker import dataCardMaker as dcm
+from dataCardProducer import dataCardMaker as dcm
 from optparse import OptionParser
 import importlib
 
