@@ -49,7 +49,7 @@ class dataCardMaker:
                     val = round(h.Integral(bin, bin + skip), 1)
                     if val < 0.1: val = 0.1
                     binValues.append(val)
-            return binValues
+        return binValues
                     
 
     def fillBinValues(self):
@@ -118,15 +118,15 @@ class dataCardMaker:
             file.write(rate_str)
             process2_str = "{0:<15}".format("\nprocess")
             file.write("\n--------------------------")
-            lumi_str = "{0:<8}".format("\nlumi")
-            lumi_str += "{0:<7}".format("lnN")
+            lumi_str = "{0:<9}".format("\nlumi")
+            lumi_str += "{0:<6}".format("lnN")
             for bin in range(self.nbins):
                 for proc in range(len(self.signal.keys()) + len(self.background.keys())):
                     lumi_str += "{0:<12}".format(1.02)
             file.write(lumi_str)
             for signal1 in self.signal.keys():
-                sig_str = "{0:<8}".format("\n"+signal1)
-                sig_str += "{0:<7}".format("lnN")
+                sig_str = "{0:<9}".format("\n"+signal1)
+                sig_str += "{0:<6}".format("lnN")
                 for bin in range(self.nbins):
                     for signal2 in self.signal.keys():
                         if signal1 == signal2:
@@ -136,8 +136,8 @@ class dataCardMaker:
                     sig_str += "{0:<12}".format("--")*len(self.background.keys())
                 file.write(sig_str)
             for background1 in self.background.keys():
-                bg_str = "{0:<8}".format("\n"+background1)
-                bg_str += "{0:<7}".format("lnN")
+                bg_str = "{0:<9}".format("\n"+background1)
+                bg_str += "{0:<6}".format("lnN")
                 for bin in range(self.nbins):
                     bg_str += "{0:<12}".format("--")*len(self.signal.keys())                
                     for background2 in self.background.keys():
@@ -148,8 +148,8 @@ class dataCardMaker:
                 file.write(bg_str)
             if self.othersys:
                 for sys in self.othersys.keys():
-                    sys_str = "{0:<8}".format("\n"+sys)
-                    sys_str += "{0:<7}".format(self.othersys[sys]["distr"])
+                    sys_str = "{0:<9}".format("\n"+sys)
+                    sys_str += "{0:<6}".format(self.othersys[sys]["distr"])
                     for bin in range(self.nbins):
                         for sg in self.signal.keys():
                             if sg in self.othersys[sys]["apply"]:
