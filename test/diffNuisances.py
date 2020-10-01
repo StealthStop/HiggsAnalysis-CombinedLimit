@@ -401,7 +401,7 @@ if options.plotfile:
     for i in xrange(0, gr_fit_b.GetN()):
         gr_fit_b.GetPoint(i, x1, y1)
         gr_fit_s.GetPoint(i, x2, y2) 
-        deltaPull.SetPoint(i, (x1+x2)/2.0, y2-y1)
+        deltaPull.SetPoint(i, (x1+x2)/2.0, abs(y2)-abs(y1))
 
     hist_fit_e_s = hist_fit_s.Clone("errors_s")
     hist_fit_e_b = hist_fit_b.Clone("errors_b")
@@ -521,7 +521,7 @@ if options.plotfile:
     dummyPull.GetYaxis().SetLabelSize(0.07*PadFactor)
     dummyPull.GetXaxis().SetLabelSize(0.075*PadFactor)
     dummyPull.GetXaxis().SetLabelOffset(0.012/PadFactor)
-    dummyPull.GetYaxis().SetTitle("#Delta Pull (s+b - b)")
+    dummyPull.GetYaxis().SetTitle("#Delta Pull (|s+b| - |b|)")
 
     dummyPull.Draw()
     deltaPull.Draw("EPsame")
