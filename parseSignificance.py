@@ -1,10 +1,9 @@
-def main():
+import os
 
-    sigs = ["Significance_TopSeed_Cards.txt",
-            "Significance_OldSeed_Cards.txt",
-            "Significance_Njet_Cards.txt"]
-
+def parseSignificance(sigs):
     for s in sigs:
+        os.system("rm Parsed{}".format(s))
+
         with open(s) as f:
             lines = f.readlines()
             words = []
@@ -35,4 +34,8 @@ def main():
             g.close()
 
 if __name__ == "__main__":
-    main()   
+    sigs = ["Significance_TopSeed_Cards.txt",
+            "Significance_OldSeed_Cards.txt",
+            "Significance_Njet_Cards.txt"]
+
+    parseSignificance(sigs)   

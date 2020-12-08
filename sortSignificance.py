@@ -1,4 +1,5 @@
 import operator
+import os
 
 def readFile(path):
     with open("Parsed{}".format(path)) as f:
@@ -26,12 +27,10 @@ def writeFile(words, s):
             i += 1
 
     f.close()
-def main():
-    sigs = ["Significance_TopSeed_Cards.txt",
-            "Significance_OldSeed_Cards.txt",
-            "Significance_Njet_Cards.txt"]
-
+def sortSignificance(sigs):
     for s in sigs:
+        os.system("rm sorted{}".format(s)) 
+
         #Read in txt file and split
         words = readFile(s)
         #Sort by largest
@@ -40,4 +39,8 @@ def main():
         writeFile(words, s)
 
 if __name__ == "__main__":
-    main()
+    sigs = ["Significance_TopSeed_Cards.txt",
+            "Significance_OldSeed_Cards.txt",
+            "Significance_Njet_Cards.txt"]
+
+    sortSignificance(sigs)
