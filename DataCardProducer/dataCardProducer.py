@@ -18,25 +18,29 @@ class dataCardMaker:
         for hist in self.histos.keys():
             h = tfile.Get(self.histos[hist]["name"])
             if isinstance(h, ROOT.TH2D) or isinstance(h, ROOT.TH2F):
-                if self.histos[hist]["end"][0] == "last":
-                    lastbinx = h.GetNbinsX()
+                if self.histos[hist]["disco"]:
+                    val = round(h.Integral())
+                    binValues.append(val)
                 else:
-                    lastbinx = self.histos[hist]["end"][0]
-                    
-                histbinsx = lastbinx - self.histos[hist]["start"][0]
-                skipx = histbinsx/self.histos[hist]["nbins"][0]
-                if self.histos[hist]["end"][1] == "last":
-                    lastbiny = h.GetNbinsY()
-                else:
-                    lastbiny = self.histos[hist]["end"][1]
-                    
-                histbinsy = lastbiny - self.histos[hist]["start"][1]
-                skipy = histbinsy/self.histos[hist]["nbins"][1]
-                for binx in range(self.histos[hist]["start"][0], lastbinx, skipx):
-                    for biny in range(self.histos[hist]["start"][1], lastbiny, skipy):
-                        val = round(h.Integral(binx, binx + skipx, biny, biny + skipy), 1)
-                        if val < 0.1: val = 0.1
-                        binValues.append(val)
+                    if self.histos[hist]["end"][0] == "last":
+                        lastbinx = h.GetNbinsX()
+                    else:
+                        lastbinx = self.histos[hist]["end"][0]
+                        
+                    histbinsx = lastbinx - self.histos[hist]["start"][0]
+                    skipx = histbinsx/self.histos[hist]["nbins"][0]
+                    if self.histos[hist]["end"][1] == "last":
+                        lastbiny = h.GetNbinsY()
+                    else:
+                        lastbiny = self.histos[hist]["end"][1]
+                        
+                    histbinsy = lastbiny - self.histos[hist]["start"][1]
+                    skipy = histbinsy/self.histos[hist]["nbins"][1]
+                    for binx in range(self.histos[hist]["start"][0], lastbinx, skipx):
+                        for biny in range(self.histos[hist]["start"][1], lastbiny, skipy):
+                            val = round(h.Integral(binx, binx + skipx, biny, biny + skipy), 1)
+                            if val < 0.1: val = 0.1
+                            binValues.append(val)
             else:
                 if self.histos[hist]["end"] == "last":
                     lastbin = h.GetNbinsX()
@@ -49,7 +53,7 @@ class dataCardMaker:
                     val = round(h.Integral(bin, bin + skip), 1)
                     if val < 0.1: val = 0.1
                     binValues.append(val)
-            return binValues
+        return binValues
                     
 
     def fillBinValues(self):
@@ -62,7 +66,9 @@ class dataCardMaker:
             self.background[bg]["binValues"] = self.calcBinValues(tfile)
         self.nbins = 0
         for h in self.histos.keys():
-            if isinstance(self.histos[h]["nbins"], list) and len(self.histos[h]["nbins"]) == 2:
+            if self.histos[h]["disco"]:
+                self.nbins += 1
+            elif isinstance(self.histos[h]["nbins"], list) and len(self.histos[h]["nbins"]) == 2:
                 self.nbins += self.histos[h]["nbins"][0]*self.histos[h]["nbins"][1]
             else:
                 self.nbins += self.histos[h]["nbins"]
